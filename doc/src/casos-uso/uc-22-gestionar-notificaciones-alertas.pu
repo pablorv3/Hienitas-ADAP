@@ -1,0 +1,36 @@
+@startuml uc-22
+    left to right direction
+    skinparam packageStyle rectangle
+
+    actor "Usuario Interno" as UI
+    actor "Administrador" as Admin
+
+    ' Herencia de actores
+    Admin -|> UI
+
+    rectangle "UC-22: Gestionar notificaciones y alertas" {
+        usecase "Consultar bandeja de notificaciones" as UC_Consultar
+        usecase "Marcar notificación como leída" as UC_Marcar
+        usecase "Configurar canales de notificación y alertas" as UC_Configurar
+        usecase "Consultar bandeja global del sistema" as UC_BandejaGlobal
+
+        ' Extensión para acciones opcionales sobre la bandeja
+        UC_Consultar <.. UC_Marcar : <<extend>>
+    }
+
+    ' Nota de validación explícita asociada al marcado de notificaciones
+    note bottom of UC_Marcar
+    <b>Regla de negocio (FR-083):</b>
+    Solo las notificaciones informativas 
+    pueden marcarse como leídas. Las que 
+    requieren acción se mantienen pendientes.
+    end note
+
+    ' Asociaciones simples (líneas sin flecha)
+    UI -- UC_Consultar
+    UI -- UC_Configurar
+
+    ' El administrador tiene acceso a la vista general
+    Admin -- UC_BandejaGlobal
+
+@enduml
