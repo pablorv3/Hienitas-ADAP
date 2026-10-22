@@ -1,0 +1,34 @@
+@startuml uc-25
+    left to right direction
+    skinparam packageStyle rectangle
+
+    actor "Administrador" as Admin
+
+    rectangle "UC-25: Generar informes y exportar datos" {
+        usecase "Seleccionar tipo de informe y filtros" as UC_Filtros
+        usecase "Generar informe" as UC_Generar
+        usecase "Revisar y exportar informe (CSV/PDF)" as UC_Exportar
+        usecase "Programar resumen periódico" as UC_Programar
+        usecase "Regenerar informe previo" as UC_Regenerar
+
+        ' Relación de inclusión: Generar un informe requiere obligatoriamente configurar los filtros
+        UC_Generar ..> UC_Filtros : <<include>>
+        
+        ' Acciones opcionales tras generar/visualizar el informe
+        UC_Generar <.. UC_Exportar : <<extend>>
+        UC_Generar <.. UC_Programar : <<extend>>
+        UC_Generar <.. UC_Regenerar : <<extend>>
+    }
+
+    ' Nota de seguridad sobre la exportación de datos
+    note top of UC_Exportar
+    <b>Restricción de seguridad (FR-093 / E1):</b>
+    El sistema limita la exportación de datos
+    estrictamente al contenido autorizado
+    para el usuario que la solicita.
+    end note
+
+    ' Asociación simple al caso de uso desencadenante
+    Admin -- UC_Generar
+
+@enduml
