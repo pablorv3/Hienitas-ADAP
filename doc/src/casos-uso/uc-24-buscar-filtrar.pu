@@ -1,0 +1,28 @@
+@startuml uc-24
+    left to right direction
+    skinparam packageStyle rectangle
+
+    actor "Usuario Interno" as UI
+
+    rectangle "UC-24: Buscar y filtrar" {
+        usecase "Realizar búsqueda y filtrado" as UC_Buscar
+        usecase "Guardar filtro frecuente" as UC_Guardar
+        usecase "Acceder a favoritos o recientes" as UC_Favoritos
+
+        ' Opciones secundarias derivadas de la búsqueda
+        UC_Buscar <.. UC_Guardar : <<extend>>
+        UC_Buscar <.. UC_Favoritos : <<extend>>
+    }
+
+    ' Nota de seguridad sobre los resultados
+    note bottom of UC_Buscar
+    <b>Restricción de seguridad (FR-089 / E2):</b>
+    Los resultados omiten registros no permitidos.
+    El acceso directo por URL a un elemento
+    restringido es rechazado por el servidor.
+    end note
+
+    ' Asociación simple
+    UI -- UC_Buscar
+
+@enduml
