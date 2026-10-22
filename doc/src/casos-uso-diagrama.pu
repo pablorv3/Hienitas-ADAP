@@ -150,6 +150,7 @@ Generar -down- NotaReq
 
 @enduml
 'Caso de uso-15 Rectificar facturas emitidas'
+
 @startuml
 left to right direction
 

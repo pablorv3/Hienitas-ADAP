@@ -1,0 +1,40 @@
+@startuml uc-08
+    left to right direction
+    skinparam packageStyle rectangle
+
+    actor "Usuario Operativo" as UO
+    actor "Administrador" as Admin
+
+    ' Herencia de actores
+    Admin -|> UO
+
+    rectangle "UC-08: Gestionar suscripción" {
+        usecase "Gestionar suscripción mensual" as UC_Suscripcion
+        usecase "Validar datos fiscales de activación" as UC_ValidarDatos
+        usecase "Registrar excepción comercial" as UC_Excepcion
+        usecase "Reactivar suscripción" as UC_Reactivar
+        usecase "Pausar suscripción temporalmente" as UC_Pausar
+        usecase "Aplicar prorrateo de cuota" as UC_Prorrateo
+
+        ' Inclusión obligatoria
+        UC_Suscripcion ..> UC_ValidarDatos : <<include>>
+
+        ' Extensiones condicionales
+        UC_Suscripcion <.. UC_Prorrateo : <<extend>>
+        UC_Suscripcion <.. UC_Pausar : <<extend>>
+        UC_Suscripcion <.. UC_Reactivar : <<extend>>
+        UC_Suscripcion <.. UC_Excepcion : <<extend>>
+    }
+
+    ' Nota situada abajo a la derecha, junto al caso correspondiente
+    note right of UC_ValidarDatos
+    <b>Regla de negocio (FR-033 / FR-079):</b>
+    Descuentos, meses gratuitos o precios
+    pactados quedan registrados de forma explícita
+    y requieren aprobación previa de un Administrador.
+    end note
+
+    ' Asociaciones simples
+    UO -- UC_Suscripcion
+
+@enduml

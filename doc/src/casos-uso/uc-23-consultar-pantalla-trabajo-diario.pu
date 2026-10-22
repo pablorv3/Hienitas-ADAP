@@ -1,0 +1,26 @@
+@startuml uc-23
+    left to right direction
+    skinparam packageStyle rectangle
+
+    actor "Usuario Interno" as UI
+
+    rectangle "UC-23: Consultar pantalla de trabajo diario" {
+        usecase "Consultar panel diario" as UC_Consultar
+        usecase "Resolver tarea pendiente" as UC_Resolver
+
+        ' La resolución es opcional/condicional si el usuario decide actuar sobre un elemento
+        UC_Consultar <.. UC_Resolver : <<extend>>
+    }
+
+    ' Nota con la regla de negocio explícita
+    note bottom of UC_Consultar
+    <b>Regla de negocio (FR-084):</b>
+    El panel solo muestra los elementos que
+    corresponden a los clientes asignados
+    y permisos del usuario autenticado.
+    end note
+
+    ' Asociación simple
+    UI -- UC_Consultar
+
+@enduml
