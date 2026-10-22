@@ -1,0 +1,36 @@
+@startuml uc-10
+    left to right direction
+    skinparam packageStyle rectangle
+
+    actor "Usuario Operativo" as UO
+    actor "Administrador" as Admin
+
+    ' Herencia de actores
+    Admin -|> UO
+
+    rectangle "UC-10: Gestionar baja y reactivación de cliente" {
+        usecase "Tramitar solicitud de baja" as UC_Baja
+        usecase "Mantener activo flujo de recobro" as UC_Recobro
+        usecase "Reactivar ficha de cliente histórico" as UC_Reactivar
+        usecase "Comprobar facturas pendientes\ny aplicar borrado lógico" as UC_Comprobar
+
+        ' Inclusión obligatoria
+        UC_Baja ..> UC_Comprobar : <<include>>
+
+        ' Extensión condicional
+        UC_Baja <.. UC_Recobro : <<extend>>
+    }
+
+    ' Nota situada abajo a la derecha, junto al caso correspondiente
+    note right of UC_Comprobar
+    <b>Regla legal y recobro (FR-115 / FR-116):</b>
+    El cliente se marca como inactivo (borrado lógico
+    por ley). Si tiene deudas, no se generan más
+    mensualidades pero continúa el flujo de recobro.
+    end note
+
+    ' Asociaciones simples
+    UO -- UC_Baja
+    UO -- UC_Reactivar
+
+@enduml

@@ -1,0 +1,38 @@
+@startuml uc-07
+    left to right direction
+    skinparam packageStyle rectangle
+
+    actor "Usuario Operativo" as UO
+    actor "Administrador" as Admin
+
+    ' Herencia de actores
+    Admin -|> UO
+
+    rectangle "UC-07: Importar clientes desde CSV" {
+        usecase "Importar clientes desde CSV" as UC_Importar
+        usecase "Validar filas y previsualizar" as UC_Validar
+        usecase "Mapear columnas del fichero" as UC_Mapear
+        usecase "Reintentar carga tras corrección" as UC_Reintentar
+        usecase "Importar solo filas válidas" as UC_SoloValidas
+
+        ' Inclusiones obligatorias
+        UC_Importar ..> UC_Validar : <<include>>
+        UC_Importar ..> UC_Mapear : <<include>>
+
+        ' Flujos alternativos
+        UC_Importar <.. UC_Reintentar : <<extend>>
+        UC_Importar <.. UC_SoloValidas : <<extend>>
+    }
+
+    ' Nota situada abajo a la derecha, junto al caso correspondiente
+    note right of UC_Validar
+    <b>Validación técnica (FR-029 / A2):</b>
+    Permite omitir filas erróneas y continuar
+    con la carga de registros correctos,
+    generando un informe con el desglose.
+    end note
+
+    ' Asociaciones simples
+    UO -- UC_Importar
+
+@enduml

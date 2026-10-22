@@ -1,0 +1,38 @@
+@startuml uc-06
+    left to right direction
+    skinparam packageStyle rectangle
+
+    actor "Usuario Operativo" as UO
+    actor "Administrador" as Admin
+
+    ' El Administrador hereda todos los permisos del Usuario Operativo
+    Admin -|> UO
+
+    rectangle "UC-06: Gestionar clientes" {
+        usecase "Gestionar ficha de cliente\n(alta, consulta y edición)" as UC_Gestionar
+        usecase "Comprobar duplicados por NIF\ny validar datos fiscales" as UC_ValidarNIF
+        usecase "Consultar historial de eventos" as UC_Historial
+        usecase "Guardar ficha como borrador" as UC_Borrador
+        usecase "Gestionar posible duplicado" as UC_Duplicado
+
+        ' Inclusión obligatoria
+        UC_Gestionar ..> UC_ValidarNIF : <<include>>
+
+        ' Flujos alternativos y opcionales
+        UC_Gestionar <.. UC_Historial : <<extend>>
+        UC_Gestionar <.. UC_Borrador : <<extend>>
+        UC_Gestionar <.. UC_Duplicado : <<extend>>
+    }
+
+    ' Nota situada abajo a la derecha, junto al caso que valida
+    note right of UC_ValidarNIF
+    <b>Regla de negocio (FR-018 / A3):</b>
+    El sistema alerta si el NIF ya existe.
+    El usuario decide si reutiliza la ficha;
+    nunca se fusionan fichas automáticamente.
+    end note
+
+    ' Asociaciones simples
+    UO -- UC_Gestionar
+
+@enduml
