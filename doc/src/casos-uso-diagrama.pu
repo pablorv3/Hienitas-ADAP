@@ -1,26 +1,181 @@
-@startuml prueba
-autonumber
-actor User
-boundary "Login Page" as Login
-control "Auth Service" as Auth
-database Database
+'Caso de uso-11 Gestionar facturas puntuales y presupuestos'
+@startuml
+left to right direction
 
-User -> Login : Enter credentials
-activate Login
-Login -> Auth : Validate(user, pass)
-activate Auth
-Auth -> Database : Query user record
-activate Database
-Database --> Auth : User record found
-deactivate Database
 
-alt successful login
-    Auth --> Login : Token generated
-    Login --> User : Redirect to Dashboard
-else invalid credentials
-    Auth --> Login : Error code
-    Login --> User : Show "Invalid Credentials"
-    deactivate Auth
-    deactivate Login
-end
-@endum
+actor "Usuario Operativo" as UO
+
+package "Caso de uso-11 Gestionar facturas puntuales y presupuestos" {
+    usecase "Crear factura puntual" as CrearFactura
+    usecase "Añadir líneas de concepto" as AnadirLineas
+    usecase "Calcular bases, impuestos y total" as Calcular
+    usecase "Guardar como borrador" as GuardarBorrador
+    
+    usecase "Crear presupuesto" as CrearPresupuesto
+    usecase "Convertir presupuesto en factura" as ConvertirPresupuesto
+    
+    usecase "Corregir / Eliminar borrador" as GestionarBorrador
+    
+    usecase "Mostrar error (Datos inválidos)" as ErrorDatos
+
+
+usecase "Modificar factura emitida" as UC15
+
+' Relaciones del Actor Principal
+UO --> CrearFactura
+UO --> CrearPresupuesto
+UO --> GestionarBorrador
+
+' Flujo Principal (Includes)
+CrearFactura ..> AnadirLineas : <<include>>
+AnadirLineas ..> Calcular : <<include>>
+CrearFactura ..> GuardarBorrador : <<include>>
+
+' Flujos Alternativos (Extends y Includes)
+ConvertirPresupuesto .up.> CrearPresupuesto : <<extend>>\n(si es aceptado)
+ConvertirPresupuesto ..> CrearFactura : <<include>>
+
+' Excepciones (Extends)
+ErrorDatos .up.> AnadirLineas : <<extend>>\n(E1: Datos de línea inválidos)
+UC15 .up.> CrearFactura : <<extend>>\n(E2: Factura ya emitida)
+
+note bottom of CrearFactura
+  **Requisitos:** 
+  FR-010, FR-044, FR-047, FR-058
+  **Precondición:** 
+  Cliente existe y está asignado al usuario.
+end note
+@enduml
+
+'Caso de uso-12 Emitir facturas'
+@startuml
+left to right direction
+
+actor "Usuario Operativo" as UO
+
+package "Caso de uso-12 Emitir factura" {
+    usecase "Emitir factura" as Emitir
+    usecase "Asignar serie y número" as AsignarNumero
+    usecase "Bloquear / Mostrar advertencia" as Bloqueo
+
+
+' Casos de uso externos referenciados
+usecase "Enviar factura" as UC13
+usecase "Aprobar excepciones" as UC16
+
+' Relación del Actor
+UO --> Emitir
+
+' Flujos Obligatorios (Includes)
+Emitir ..> AsignarNumero : <<include>>
+Emitir ..> UC13 : <<include>>\n(Tras emisión exitosa)
+
+' Flujos Alternativos y Excepciones (Extends)
+UC16 .up.> Emitir : <<extend>>\n(Requiere aprobación)
+Bloqueo .up.> Emitir : <<extend>>\n(Faltan datos o periodo cerrado)
+
+note " **Requisitos:** \n FR-051 a FR-057, FR-079, \n NFR-01, NFR-10, NFR-12, NFR-17 " as NotaReq
+Emitir -down- NotaReq
+}
+@enduml
+
+'Caso de uso-13 Enviar facturas y gestionar entregas'
+@startuml
+left to right direction
+
+actor "Usuario Operativo" as UO
+actor "Proveedor de Mensajería" as PM
+
+' Casos de uso principales
+usecase "Enviar factura (Correo)" as Enviar
+usecase "Registrar estado del envío" as RegistrarEstado
+
+' Casos de uso alternativos y excepciones
+usecase "Enviar por WhatsApp" as EnviarWA
+usecase "Reintentar envío" as Reintentar
+usecase "Notificar incidencia de entrega" as Incidencia
+
+' Relaciones de los Actores
+UO --> Enviar
+UO --> Reintentar
+PM --> RegistrarEstado
+
+' Flujos Obligatorios (Includes)
+Enviar ..> RegistrarEstado : <<include>>
+
+' Flujos Alternativos y Excepciones (Extends)
+EnviarWA .up.> Enviar : <<extend>>\n(Cliente admite WhatsApp)
+Reintentar .up.> Enviar : <<extend>>\n(Envío original fallido)
+Incidencia .up.> Enviar : <<extend>>\n(Rebote o fallo del proveedor)
+
+' Nota de requisitos
+note " **Requisitos:** \n FR-023, FR-061 a FR-065, NFR-10 \n\n **Protección NFR-10:** \n Evita duplicados en recargas \n o reintentos." as NotaReq
+Enviar -down- NotaReq
+
+@enduml
+
+'Caso de uso-14 Generar facturas recurrentes'
+@startuml
+left to right direction
+
+actor "Proceso Automático" as PA
+
+' Caso de uso principal y registro
+usecase "Generar facturas recurrentes" as Generar
+usecase "Registrar ejecución del proceso" as Registrar
+
+' Casos de uso externos referenciados
+usecase "Emitir factura" as UC12
+usecase "Aprobar excepciones" as UC16
+
+' Excepciones y flujos alternativos
+usecase "Notificar fallo de cliente" as NotificarFallo
+usecase "Recuperar ejecución pendiente" as Recuperar
+
+' Relación del Actor
+PA --> Generar
+
+' Flujos Obligatorios (Includes)
+Generar ..> UC12 : <<include>>\n(Se emite y envía)
+Generar ..> Registrar : <<include>>\n(Éxitos y fallos)
+
+' Flujos Alternativos y Excepciones (Extends)
+UC16 .up.> Generar : <<extend>>\n(Requiere aprobación)
+NotificarFallo .up.> Generar : <<extend>>\n(Error en un cliente concreto)
+Recuperar .up.> Generar : <<extend>>\n(Fallo en el sistema)
+
+' Nota de requisitos forzada abajo
+note " **Requisitos:** \n FR-040, FR-041, FR-044, FR-061, FR-110 \n NFR-09, NFR-21 \n\n **Internamente incluye:** \n Filtrar suscripciones válidas \n y calcular prorrateos (FR-041)." as NotaReq
+Generar -down- NotaReq
+
+@enduml
+'Caso de uso-15 Rectificar facturas emitidas'
+@startuml
+left to right direction
+
+actor "Administrador" as Admin
+
+' Caso de uso principal
+usecase "Rectificar factura" as Rectificar
+
+' Casos de uso alternativos y excepciones
+usecase "Registrar cambio menor" as CambioMenor
+usecase "Procedimiento excepcional (Auditado)" as Excepcional
+
+' Casos de uso externos referenciados
+usecase "Aprobar excepciones" as UC16
+
+' Relaciones del Actor
+Admin --> Rectificar
+
+' Flujos Alternativos y Excepciones (Extends)
+UC16 .up.> Rectificar : <<extend>>\n(Requiere aprobación por importe)
+CambioMenor .up.> Rectificar : <<extend>>\n(Correcciones menores sin rectificativa)
+Excepcional .up.> Rectificar : <<extend>>\n(El periodo está cerrado)
+
+' Nota de requisitos forzada abajo
+note " **Requisitos:** \n FR-048, FR-049, FR-050, FR-060 \n\n **Internamente incluye:** \n Proponer datos originales, emitir \n nota de crédito vinculada y \n actualizar el saldo del cliente." as NotaReq
+Rectificar -down- NotaReq
+
+@enduml
+
