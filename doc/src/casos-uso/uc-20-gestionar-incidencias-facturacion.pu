@@ -1,0 +1,32 @@
+@startuml uc-20
+left to right direction
+skinparam packageStyle rectangle
+
+actor "Usuario operativo" as UO
+actor "Sistema / Procesos automáticos" as Sys
+
+package "Sistema de Facturación" {
+  usecase "UC-20 Gestionar incidencias\nde facturación" as UC20
+  usecase "Abrir incidencia manual" as AbrirM
+  usecase "Abrir incidencia automática" as AbrirA
+  usecase "UC-21 Gestionar comentarios\ny adjuntos" as UC21
+  usecase "Cerrar incidencia\n(exige resolución)" as Cerrar
+  usecase "Pausar recordatorios\nde cobro" as Pausar
+}
+
+UO --> AbrirM
+UO --> Cerrar
+Sys --> AbrirA
+
+AbrirM ..> UC20 : <<include>>
+AbrirA ..> UC20 : <<include>>
+Cerrar ..> UC20 : <<include>>
+
+UC21 .up.> UC20 : <<extend>>
+Pausar .up.> UC20 : <<extend>>
+
+note right of UC20
+  Precondición: El cliente existe
+  y está asignado al usuario.
+end note
+@enduml

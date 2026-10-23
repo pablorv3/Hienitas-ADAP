@@ -1,0 +1,29 @@
+@startuml uc-18
+left to right direction
+skinparam packageStyle rectangle
+
+actor "Procesos automáticos" as PA
+actor "Usuario operativo" as UO
+
+package "Sistema de Facturación" {
+  usecase "UC-18 Gestionar recordatorios\ne impagos" as UC18
+  usecase "Calcular vencimiento y\nenviar recordatorios previos" as Previos
+  usecase "Marcar vencida e iniciar\nflujo de impago" as Impago
+  usecase "Suspender recordatorios\ntemporalmente" as Suspender
+  usecase "Detener flujo por\nintervención manual" as Intervenir
+}
+
+PA --> UC18
+UO --> Suspender
+UO --> Intervenir
+
+Previos .up.> UC18 : <<include>>
+Impago .up.> UC18 : <<include>>
+Suspender .up.> UC18 : <<extend>>
+Intervenir .up.> UC18 : <<extend>>
+
+note right of UC18
+  El flujo se detiene automáticamente
+  al detectarse el cobro.
+end note
+@enduml
