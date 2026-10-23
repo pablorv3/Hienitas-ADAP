@@ -1,0 +1,37 @@
+@startuml uc-30
+    left to right direction
+    skinparam packageStyle rectangle
+
+    actor "Sistema externo\n(API, p. ej. Brain)" as API
+
+    rectangle "UC-30: Consultar y operar vía API" {
+        usecase "Consultar información\nde un cliente vía API" as UC_Consultar
+        usecase "Validar credenciales y permisos" as UC_Validar
+        usecase "Registrar solicitud de baja\nde un cliente" as UC_Baja
+
+        ' Inclusión obligatoria: toda petición se valida
+        UC_Consultar ..> UC_Validar : <<include>>
+
+        ' Flujo alternativo
+        UC_Consultar <.. UC_Baja : <<extend>>
+    }
+
+    ' Nota sobre las reglas de la API
+    note right of UC_Validar
+    <b>Regla de negocio (FR-113, FR-114 / NFR-26):</b>
+    La API devuelve solo el detalle mínimo autorizado
+    (p. ej. si el cliente tiene facturas pendientes).
+    No puede saltarse las reglas de la aplicación y
+    limita el número de peticiones.
+    end note
+
+    note bottom of UC_Baja
+    Se crea la tarea correspondiente; la baja sigue
+    el flujo de UC-10 y no elimina la recurrencia
+    directamente.
+    end note
+
+    ' Asociación simple
+    API -- UC_Consultar
+
+@enduml

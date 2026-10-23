@@ -1,0 +1,30 @@
+@startuml uc-28
+    left to right direction
+    skinparam packageStyle rectangle
+
+    actor "Administrador" as Admin
+
+    rectangle "UC-28: Consultar auditoría" {
+        usecase "Consultar registro de auditoría" as UC_Auditoria
+        usecase "Filtrar eventos por usuario, acción,\ncliente, factura o fecha" as UC_Filtrar
+        usecase "Consultar línea temporal del cliente" as UC_Linea
+
+        ' Inclusión obligatoria: la consulta se hace sobre eventos filtrados
+        UC_Auditoria ..> UC_Filtrar : <<include>>
+
+        ' Flujo alternativo
+        UC_Auditoria <.. UC_Linea : <<extend>>
+    }
+
+    ' Nota sobre la inalterabilidad del registro
+    note right of UC_Auditoria
+    <b>Regla de negocio (FR-109 / FR-104 / FR-101):</b>
+    Registro de todos los cambios con su autor.
+    El registro es de solo lectura: no existe
+    ninguna operación para modificarlo o borrarlo.
+    end note
+
+    ' Asociación simple
+    Admin -- UC_Auditoria
+
+@enduml

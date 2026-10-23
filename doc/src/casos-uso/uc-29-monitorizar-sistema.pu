@@ -1,0 +1,33 @@
+@startuml uc-29
+    left to right direction
+    skinparam packageStyle rectangle
+
+    actor "Administrador" as Admin
+
+    rectangle "UC-29: Monitorizar el sistema" {
+        usecase "Consultar pantalla de salud\ndel sistema" as UC_Salud
+        usecase "Mostrar estado de generación recurrente,\ncorreos, integraciones y backup" as UC_Estado
+        usecase "Consultar registro de ejecución\nde un proceso" as UC_Ejecucion
+        usecase "Alertar de un proceso fallido" as UC_Alerta
+
+        ' Inclusión obligatoria: la pantalla siempre muestra el estado
+        UC_Salud ..> UC_Estado : <<include>>
+
+        ' Flujos opcionales
+        UC_Salud <.. UC_Ejecucion : <<extend>>
+        UC_Salud <.. UC_Alerta : <<extend>>
+    }
+
+    ' Nota sobre el tratamiento de errores
+    note right of UC_Ejecucion
+    <b>Regla de negocio (FR-110 / FR-112):</b>
+    Se indica cuántos clientes se procesaron,
+    cuántas facturas se crearon y cuáles fallaron.
+    Los errores técnicos se muestran solo con un
+    código de incidencia (NFR-28).
+    end note
+
+    ' Asociación simple
+    Admin -- UC_Salud
+
+@enduml
