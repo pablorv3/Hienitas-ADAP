@@ -1,0 +1,33 @@
+@startuml uc-13
+left to right direction
+
+actor "Usuario Operativo" as UO
+actor "Proveedor de Mensajería" as PM
+
+' Casos de uso principales
+usecase "Enviar factura (Correo)" as Enviar
+usecase "Registrar estado del envío" as RegistrarEstado
+
+' Casos de uso alternativos y excepciones
+usecase "Enviar por WhatsApp" as EnviarWA
+usecase "Reintentar envío" as Reintentar
+usecase "Notificar incidencia de entrega" as Incidencia
+
+' Relaciones de los Actores
+UO --> Enviar
+UO --> Reintentar
+PM --> RegistrarEstado
+
+' Flujos Obligatorios (Includes)
+Enviar ..> RegistrarEstado : <<include>>
+
+' Flujos Alternativos y Excepciones (Extends)
+EnviarWA .up.> Enviar : <<extend>>\n(Cliente admite WhatsApp)
+Reintentar .up.> Enviar : <<extend>>\n(Envío original fallido)
+Incidencia .up.> Enviar : <<extend>>\n(Rebote o fallo del proveedor)
+
+' Nota de requisitos
+note " **Requisitos:** \n FR-023, FR-061 a FR-065, NFR-10 \n\n **Protección NFR-10:** \n Evita duplicados en recargas \n o reintentos." as NotaReq
+Enviar -down- NotaReq
+
+@enduml
