@@ -10,7 +10,7 @@
 
     rectangle "UC-07: Importar clientes desde CSV" {
         usecase "Importar clientes desde CSV" as UC_Importar
-        usecase "Validar filas y previsualizar" as UC_Validar
+        usecase "Validar filas y previsualizar" as UC_Validar 
         usecase "Mapear columnas del fichero" as UC_Mapear
         usecase "Reintentar carga tras corrección" as UC_Reintentar
         usecase "Importar solo filas válidas" as UC_SoloValidas
