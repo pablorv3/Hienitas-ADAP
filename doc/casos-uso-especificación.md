@@ -7,7 +7,6 @@
 
 | Actor | Descripción |
 |---|---|
-| Usuario interno | Actor abstracto: cualquier persona autenticada de Turbine. |
 | Usuario operativo | Trabaja sobre los clientes que tiene asignados (responsable interno). |
 | Administrador | Gestiona operaciones, clientes, facturas, asignaciones y aprobaciones. Hereda todo lo del usuario operativo, sobre todos los clientes. |
 | Superadministrador | Configuración profunda y faceta técnica. Hereda todo lo del administrador. |
@@ -16,13 +15,13 @@
 | Sistema externo vía API (p. ej., Brain) | Sistema que consulta o solicita acciones a través de la API. |
 | Procesos automáticos | Tareas programadas del propio sistema (generación mensual, recordatorios, informes). |
 
-**Generalización de actores:** Superadministrador → Administrador → Usuario operativo → Usuario interno. En cada caso de uso se indica el actor más básico que puede ejecutarlo, y los actores superiores lo heredan.
+**Generalización de actores:** Superadministrador → Administrador → Usuario operativo. En cada caso de uso se indica el actor más básico que puede ejecutarlo, y los actores superiores lo heredan.
 
 ## 2. Resumen de casos de uso
 
 | ID | Caso de uso | Actor principal |
 |---|---|---|
-| UC-01 | Autenticarse | Usuario interno |
+| UC-01 | Autenticarse | Usuario operativo |
 | UC-02 | Gestionar usuarios y roles | Superadministrador |
 | UC-03 | Gestionar asignación de clientes | Administrador |
 | UC-04 | Configurar el sistema | Superadministrador |
@@ -43,9 +42,9 @@
 | UC-19 | Cancelar deuda incobrable | Administrador |
 | UC-20 | Gestionar incidencias de facturación | Usuario operativo |
 | UC-21 | Gestionar comentarios y adjuntos | Usuario operativo |
-| UC-22 | Gestionar notificaciones y alertas | Usuario interno |
-| UC-23 | Consultar pantalla de trabajo diario | Usuario interno |
-| UC-24 | Buscar y filtrar | Usuario interno |
+| UC-22 | Gestionar notificaciones y alertas | Usuario operativo |
+| UC-23 | Consultar pantalla de trabajo diario | Usuario operativo |
+| UC-24 | Buscar y filtrar | Usuario operativo |
 | UC-25 | Generar informes y exportar datos | Administrador |
 | UC-26 | Consultar dashboard financiero | Administrador |
 | UC-27 | Cerrar periodos | Administrador |
@@ -68,7 +67,7 @@ El resto de casos de uso se relacionan solo con sus actores. Las aprobaciones (U
 
 ### UC-01. Autenticarse
 - **Objetivo:** Acceder de forma segura a la aplicación y recuperar la contraseña si se olvida.
-- **Actores:** Usuario interno.
+- **Actores:** Usuario operativo.
 - **Precondiciones:** El usuario tiene una cuenta activa creada por el superadministrador.
 - **Flujo principal:**
   1. El usuario introduce su correo y contraseña.
@@ -434,7 +433,7 @@ El resto de casos de uso se relacionan solo con sus actores. Las aprobaciones (U
 
 ### UC-22. Gestionar notificaciones y alertas
 - **Objetivo:** Recibir los eventos relevantes, distinguir los informativos de los que requieren acción y configurar alertas.
-- **Actores:** Usuario interno.
+- **Actores:** Usuario operativo.
 - **Precondiciones:** El usuario está autenticado.
 - **Flujo principal:**
   1. El usuario abre su bandeja de notificaciones.
@@ -451,7 +450,7 @@ El resto de casos de uso se relacionan solo con sus actores. Las aprobaciones (U
 
 ### UC-23. Consultar pantalla de trabajo diario
 - **Objetivo:** Ver al entrar lo que requiere atención y resolverlo con pocos clics.
-- **Actores:** Usuario interno.
+- **Actores:** Usuario operativo.
 - **Precondiciones:** El usuario está autenticado.
 - **Flujo principal:**
   1. Al iniciar sesión, el sistema muestra facturas que vencen pronto, vencidas, pagos por conciliar, problemas de entrega, aprobaciones pendientes, revisiones anuales y tareas asignadas.
@@ -466,7 +465,7 @@ El resto de casos de uso se relacionan solo con sus actores. Las aprobaciones (U
 
 ### UC-24. Buscar y filtrar
 - **Objetivo:** Localizar rápidamente clientes y facturas y acceder a favoritos y recientes.
-- **Actores:** Usuario interno.
+- **Actores:** Usuario operativo.
 - **Precondiciones:** El usuario está autenticado.
 - **Flujo principal:**
   1. El usuario escribe en el buscador (nombre comercial, razón social, NIF, contacto, número de factura o correo).
