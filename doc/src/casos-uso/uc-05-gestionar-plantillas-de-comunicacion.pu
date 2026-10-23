@@ -1,0 +1,35 @@
+@startuml uc-05
+    left to right direction
+    skinparam packageStyle rectangle
+
+    actor "Administrador" as Admin
+
+    rectangle "UC-05: Gestionar plantillas de comunicación" {
+        usecase "Gestionar plantillas\nde comunicación" as UC_Gestionar
+        usecase "Previsualizar plantilla\ny validar variables" as UC_Previsualizar
+        usecase "Enviar correo de prueba\nal propio administrador" as UC_Prueba
+        usecase "Consultar historial\nde versiones" as UC_Historial
+        usecase "Consultar plantilla usada\nen un envío concreto" as UC_VersionEnvio
+
+        ' La previsualización y validación de variables pertenecen al flujo principal.
+        UC_Gestionar ..> UC_Previsualizar : <<include>>
+
+        ' Acciones opcionales descritas en los flujos alternativos.
+        UC_Gestionar <.. UC_Prueba : <<extend>>
+        UC_Gestionar <.. UC_Historial : <<extend>>
+        UC_Gestionar <.. UC_VersionEnvio : <<extend>>
+    }
+
+    note right of UC_Previsualizar
+      <b>Reglas de plantillas (FR-106 a FR-108 / NFR-22):</b>
+      Tipos: factura, recordatorio previo, vencimiento, impago, disputa resuelta
+      y revisión de datos. Las plantillas principales están disponibles en español
+      e inglés, y se puede elegir el idioma por cliente o contacto.
+      Admiten variables como nombre de empresa, número de factura, importe,
+      vencimiento, responsable y datos de soporte. Si falta una variable o no existe,
+      el sistema avisa y no permite guardar. Al guardar se crea una nueva versión
+      disponible para futuros envíos y se conserva el historial de versiones.
+    end note
+
+    Admin -- UC_Gestionar
+@enduml

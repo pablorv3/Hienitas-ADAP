@@ -1,0 +1,37 @@
+@startuml uc-02
+    left to right direction
+    skinparam packageStyle rectangle
+
+    actor "Superadministrador" as SA
+
+    rectangle "UC-02: Gestionar usuarios y roles" {
+        usecase "Gestionar usuarios y roles" as UC_Gestionar
+        usecase "Crear o invitar usuario\n(asignar rol y permisos)" as UC_Crear
+        usecase "Validar correo corporativo\ny comprobar que no existe" as UC_Validar
+        usecase "Enviar invitación al usuario" as UC_Invitar
+        usecase "Modificar rol o permisos\nde un usuario existente" as UC_Modificar
+        usecase "Desactivar usuario" as UC_Desactivar
+
+        ' Operaciones disponibles dentro de la gestión de usuarios.
+        UC_Gestionar <.. UC_Crear : <<extend>>
+        UC_Gestionar <.. UC_Modificar : <<extend>>
+        UC_Gestionar <.. UC_Desactivar : <<extend>>
+
+        ' Validar el correo y enviar la invitación son pasos del alta/invitación.
+        UC_Crear ..> UC_Validar : <<include>>
+        UC_Crear ..> UC_Invitar : <<include>>
+    }
+
+    note right of UC_Validar
+      <b>Reglas (FR-003 / FR-004 / FR-006 / FR-007 / FR-013 / NFR-15):</b>
+      El correo debe pertenecer al dominio corporativo autorizado y no estar
+      registrado previamente; de lo contrario, se rechaza la operación.
+      Los roles son superadministrador, administrador y usuario operativo.
+      Un usuario operativo no puede concederse acceso a otros clientes,
+      cambiar tarifas globales, crear series de facturación ni ver el dashboard
+      financiero global. Al desactivar una cuenta, se invalidan sus sesiones
+      activas y se conserva el rastro de sus acciones. Los cambios quedan auditados.
+    end note
+
+    SA -- UC_Gestionar
+@enduml
