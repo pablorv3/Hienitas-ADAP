@@ -4,7 +4,7 @@
 
     actor "Usuario Interno" as UI
 
-    rectangle "UC-23: Consultar pantalla de trabajo diario" {
+    rectangle "uc-23: Consultar pantalla de trabajo diario" {
         usecase "Consultar panel diario" as UC_Consultar
         usecase "Resolver tarea pendiente" as UC_Resolver
 

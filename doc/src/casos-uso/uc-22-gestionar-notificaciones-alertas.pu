@@ -2,7 +2,7 @@
     left to right direction
     skinparam packageStyle rectangle
 
-    actor "Usuario Operativo" as UI
+    actor "Usuario Interno" as UI
     actor "Administrador" as Admin
 
     ' Herencia de actores

@@ -2,7 +2,7 @@
     left to right direction
     skinparam packageStyle rectangle
 
-    actor "Usuario Operativo" as UI
+    actor "Usuario Interno" as UI
 
     rectangle "uc-24: Buscar y filtrar" {
         usecase "Realizar búsqueda y filtrado" as UC_Buscar
