@@ -3,9 +3,11 @@
     skinparam packageStyle rectangle
 
     actor "Administrador" as Admin
+    actor "Super Administrador" as Super
 
-    rectangle "UC-27: Cerrar periodos" {
+    rectangle "uc-27: Cerrar periodos" {
         usecase "Cerrar periodo administrativo" as UC_Cerrar
+        usecase "Confirmar reapertura" as confirmar
         usecase "Revisar resumen y elementos\npendientes del periodo" as UC_Resumen
         usecase "Reabrir periodo cerrado" as UC_Reabrir
 
@@ -14,10 +16,11 @@
 
         ' Flujo alternativo
         UC_Cerrar <.. UC_Reabrir : <<extend>>
+        confirmar <.. UC_Reabrir : <<include>>
     }
 
     ' Nota sobre el efecto del cierre
-    note right of UC_Cerrar
+    note bottom of UC_Cerrar
     <b>Regla de negocio (FR-059, FR-060 / RB-08):</b>
     En un periodo cerrado no se permiten cambios
     ordinarios en las facturas; solo mediante un
@@ -25,12 +28,12 @@
     <i>Pendiente (Q-08): se asume cierre manual.</i>
     end note
 
-    note bottom of UC_Reabrir
-    Requiere permiso superior y motivo.
+    note right of UC_Reabrir
     El cierre y la reapertura quedan auditados.
     end note
 
     ' Asociación simple
     Admin -- UC_Cerrar
+    Super -- confirmar
 
 @enduml

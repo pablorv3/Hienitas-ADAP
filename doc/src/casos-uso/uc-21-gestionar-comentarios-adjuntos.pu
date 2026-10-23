@@ -8,17 +8,17 @@
     ' El Administrador hereda todos los permisos del Usuario Operativo
     Admin -|> UO
 
-    rectangle "UC-21: Gestionar comentarios y adjuntos" {
+    rectangle "uc-21: Gestionar comentarios y adjuntos" {
         usecase "Añadir comentario a factura/incidencia" as UC_Comentar
         usecase "Mencionar a un compañero" as UC_Mencionar
         usecase "Restringir visibilidad a administradores" as UC_Restringir
-        
+        usecase "Validar documento" as Validar
         usecase "Subir documento adjunto" as UC_Subir
         usecase "Descargar adjunto" as UC_Descargar
 
         ' Flujos alternativos/opcionales del comentario
         UC_Comentar <.. UC_Mencionar : <<extend>>
-    
+        UC_Subir ..> Validar : <<include>>
         UC_Comentar <.. UC_Restringir : <<extend>>
     
     }
@@ -29,11 +29,4 @@
 
     ' El administrador interviene directamente en la restricción
     Admin -- UC_Restringir
-
-    ' Nota de validación asociada al uso de subida de archivos
-note bottom of UC_Subir
-  <b>Validación obligatoria (NFR-25):</b>
-  El sistema valida formato y tamaño
-  máximo permitido antes de almacenar.
-end note
 @enduml

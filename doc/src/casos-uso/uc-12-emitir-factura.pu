@@ -3,28 +3,23 @@
 
   actor "Usuario Operativo" as UO
 
-  package "Caso de uso-12 Emitir factura" {
+  rectangle "uc-12 Emitir factura" {
       usecase "Emitir factura" as Emitir
       usecase "Asignar serie y número" as AsignarNumero
-      usecase "Bloquear / Mostrar advertencia" as Bloqueo
-
-
-  ' Casos de uso externos referenciados
-  usecase "Enviar factura" as UC13
-  usecase "Aprobar excepciones" as UC16
+      usecase "Mostrar advertencia" as Bloqueo
+      usecase "Enviar factura" as UC13
+      usecase "Aprobar excepciones" as UC16
 
   ' Relación del Actor
-  UO --> Emitir
+  UO -- Emitir
 
   ' Flujos Obligatorios (Includes)
   Emitir ..> AsignarNumero : <<include>>
-  Emitir ..> UC13 : <<include>>\n(Tras emisión exitosa)
+  Emitir ..> UC13 : <<include>>
 
   ' Flujos Alternativos y Excepciones (Extends)
-  UC16 .up.> Emitir : <<extend>>\n(Requiere aprobación)
-  Bloqueo .up.> Emitir : <<extend>>\n(Faltan datos o periodo cerrado)
+  UC16 .up.> Emitir : <<extend>>
+  Bloqueo <.. Emitir : <<include>>
 
-  note " **Requisitos:** \n FR-051 a FR-057, FR-079, \n NFR-01, NFR-10, NFR-12, NFR-17 " as NotaReq
-  Emitir -down- NotaReq
   }
 @enduml

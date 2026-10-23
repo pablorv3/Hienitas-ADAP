@@ -4,30 +4,29 @@ left to right direction
 actor "Usuario Operativo" as UO
 actor "Proveedor de Mensajería" as PM
 
-' Casos de uso principales
-usecase "Enviar factura (Correo)" as Enviar
-usecase "Registrar estado del envío" as RegistrarEstado
+rectangle "uc-13: enviar factura y gentionar entrega"{
+    ' Casos de uso principales
+    usecase "Enviar factura (Correo)" as Enviar
+    usecase "Registrar estado del envío" as RegistrarEstado
 
-' Casos de uso alternativos y excepciones
-usecase "Enviar por WhatsApp" as EnviarWA
-usecase "Reintentar envío" as Reintentar
-usecase "Notificar incidencia de entrega" as Incidencia
+    ' Casos de uso alternativos y excepciones
+    usecase "Enviar por WhatsApp" as EnviarWA
+    usecase "Reintentar envío" as Reintentar
+    usecase "Notificar incidencia de entrega" as Incidencia
 
-' Relaciones de los Actores
-UO --> Enviar
-UO --> Reintentar
-PM --> RegistrarEstado
+    ' Relaciones de los Actores
+    UO -- Enviar
+    
+    PM -- RegistrarEstado
 
-' Flujos Obligatorios (Includes)
-Enviar ..> RegistrarEstado : <<include>>
+    ' Flujos Obligatorios (Includes)
+    Enviar ..> RegistrarEstado : <<include>>
 
-' Flujos Alternativos y Excepciones (Extends)
-EnviarWA .up.> Enviar : <<extend>>\n(Cliente admite WhatsApp)
-Reintentar .up.> Enviar : <<extend>>\n(Envío original fallido)
-Incidencia .up.> Enviar : <<extend>>\n(Rebote o fallo del proveedor)
+    ' Flujos Alternativos y Excepciones (Extends)
+    EnviarWA ..> Enviar : <<extend>>
+    Reintentar ..> Enviar : <<extend>>
+    Incidencia ..> Enviar : <<extend>>
 
-' Nota de requisitos
-note " **Requisitos:** \n FR-023, FR-061 a FR-065, NFR-10 \n\n **Protección NFR-10:** \n Evita duplicados en recargas \n o reintentos." as NotaReq
-Enviar -down- NotaReq
+}
 
 @enduml

@@ -4,7 +4,7 @@
 
     actor "Administrador" as Admin
 
-    rectangle "UC-28: Consultar auditoría" {
+    rectangle "uc-28: Consultar auditoría" {
         usecase "Consultar registro de auditoría" as UC_Auditoria
         usecase "Filtrar eventos por usuario, acción,\ncliente, factura o fecha" as UC_Filtrar
         usecase "Consultar línea temporal del cliente" as UC_Linea

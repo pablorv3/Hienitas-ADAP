@@ -1,22 +1,22 @@
 @startuml uc-19
 left to right direction
-skinparam packageStyle rectangle
 
 actor "Administrador" as Admin
 
-package "Sistema de Facturación" {
-  usecase "UC-19 Cancelar deuda incobrable" as UC19
+rectangle "uc-19 Cancelar deuda incobrable" {
+  usecase "Cancelar deuda" as UC19
   usecase "Indicar motivo de cancelación" as Motivo
-  usecase "UC-16 Gestionar aprobaciones" as UC16
+  usecase "gestionar aprobaciones" as UC16
 }
 
-Admin --> UC19
+Admin -- UC19
 
 UC19 ..> Motivo : <<include>>
-UC19 ..> UC16 : <<include>>
+Motivo ..> UC16 : <<include>>
 
 note right of UC19
-  Precondición: Existe una factura
+  <b>Precondición: 
+  Existe una factura
   vencida y sin cobrar.
 end note
 @enduml

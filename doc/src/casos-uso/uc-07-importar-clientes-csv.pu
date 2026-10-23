@@ -24,14 +24,6 @@
         UC_Importar <.. UC_SoloValidas : <<extend>>
     }
 
-    ' Nota situada abajo a la derecha, junto al caso correspondiente
-    note right of UC_Validar
-    <b>Validación técnica (FR-029 / A2):</b>
-    Permite omitir filas erróneas y continuar
-    con la carga de registros correctos,
-    generando un informe con el desglose.
-    end note
-
     ' Asociaciones simples
     UO -- UC_Importar
 

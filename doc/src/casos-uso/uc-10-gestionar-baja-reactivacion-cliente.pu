@@ -23,7 +23,7 @@
 
     ' Nota situada abajo a la derecha, junto al caso correspondiente
     note right of UC_Comprobar
-    <b>Regla legal y recobro (FR-115 / FR-116):</b>
+    <b>Regla legal y recobro (borrado logíco):</b>
     El cliente se marca como inactivo (borrado lógico
     por ley). Si tiene deudas, no se generan más
     mensualidades pero continúa el flujo de recobro.

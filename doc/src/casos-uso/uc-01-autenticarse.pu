@@ -16,19 +16,5 @@
         UC_Autenticar <.. UC_Recuperar : <<extend>>
     }
 
-    note right of UC_Validar
-      <b>Reglas de acceso (FR-001 / FR-002 / FR-005 / NFR-03 / NFR-15 / NFR-19 / NFR-29):</b>
-      El sistema comprueba el correo corporativo y las credenciales, y rechaza
-      los datos no válidos y las cuentas desactivadas. Solo acceden usuarios
-      internos autenticados; no existe autorregistro ni acceso de clientes.
-      Tras demasiados intentos fallidos, el acceso se limita temporalmente.
-      El enlace de recuperación es temporal; si caduca, debe solicitarse otro.
-      La sesión se cierra por inactividad y se invalida cuando se desactiva la cuenta.
-      Tras autenticar correctamente, se abre una sesión con el rol y los permisos
-      del usuario y se muestra la pantalla de trabajo diario.
-      Las comunicaciones usan un canal cifrado y las contraseñas no se almacenan
-      en texto plano.
-    end note
-
     UI -- UC_Autenticar
 @enduml

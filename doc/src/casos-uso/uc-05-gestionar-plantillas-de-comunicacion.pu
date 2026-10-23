@@ -20,16 +20,5 @@
         UC_Gestionar <.. UC_VersionEnvio : <<extend>>
     }
 
-    note right of UC_Previsualizar
-      <b>Reglas de plantillas (FR-106 a FR-108 / NFR-22):</b>
-      Tipos: factura, recordatorio previo, vencimiento, impago, disputa resuelta
-      y revisión de datos. Las plantillas principales están disponibles en español
-      e inglés, y se puede elegir el idioma por cliente o contacto.
-      Admiten variables como nombre de empresa, número de factura, importe,
-      vencimiento, responsable y datos de soporte. Si falta una variable o no existe,
-      el sistema avisa y no permite guardar. Al guardar se crea una nueva versión
-      disponible para futuros envíos y se conserva el historial de versiones.
-    end note
-
     Admin -- UC_Gestionar
 @enduml

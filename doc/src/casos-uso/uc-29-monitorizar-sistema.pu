@@ -4,7 +4,7 @@
 
     actor "Administrador" as Admin
 
-    rectangle "UC-29: Monitorizar el sistema" {
+    rectangle "uc-29: Monitorizar el sistema" {
         usecase "Consultar pantalla de salud\ndel sistema" as UC_Salud
         usecase "Mostrar estado de generación recurrente,\ncorreos, integraciones y backup" as UC_Estado
         usecase "Consultar registro de ejecución\nde un proceso" as UC_Ejecucion

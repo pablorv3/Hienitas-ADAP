@@ -4,10 +4,10 @@
 
     actor "Administrador" as Admin
 
-    rectangle "UC-26: Consultar dashboard financiero" {
+    rectangle "uc-26: Consultar dashboard financiero" {
         usecase "Consultar dashboard financiero" as UC_Dashboard
         usecase "Mostrar indicadores de facturación,\ncobro y previsión" as UC_Indicadores
-        usecase "Consultar detalle de una cifra" as UC_Detalle
+        usecase "Consultar detalles" as UC_Detalle
         usecase "Consultar objetivos y su progreso" as UC_Objetivos
 
         ' Inclusión obligatoria: el dashboard siempre muestra los indicadores
@@ -21,14 +21,14 @@
     ' Nota sobre acceso e indicadores
     note right of UC_Indicadores
     <b>Regla de negocio (FR-094 a FR-098):</b>
-    Facturado (semana, mes, trimestre y año),
+    Muestra resumen facturado (semana, mes, trimestre y año),
     cobrado, pendiente, vencido, tiempo medio
     de cobro, mayores deudas y recurrentes
     esperados. Solo visible para administradores
     (el usuario operativo no accede, FR-013).
     end note
 
-    note bottom of UC_Objetivos
+    note right of UC_Objetivos
     <b>Nota (FR-099):</b>
     Los objetivos son meramente informativos
     y no alteran las facturas.

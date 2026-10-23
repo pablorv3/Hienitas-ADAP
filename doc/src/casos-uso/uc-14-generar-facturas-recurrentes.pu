@@ -2,33 +2,29 @@
   left to right direction
 
   actor "Proceso Automático" as PA
+  rectangle "uc-14: Generar facturas recurrentes"{
+    ' Caso de uso principal y registro
+    usecase "Generar facturas recurrentes" as Generar
+    usecase "Registrar ejecución del proceso" as Registrar
 
-  ' Caso de uso principal y registro
-  usecase "Generar facturas recurrentes" as Generar
-  usecase "Registrar ejecución del proceso" as Registrar
+    ' Casos de uso externos referenciados
+    usecase "Emitir factura" as UC12
+    usecase "Aprobar excepciones" as UC16
 
-  ' Casos de uso externos referenciados
-  usecase "Emitir factura" as UC12
-  usecase "Aprobar excepciones" as UC16
+    ' Excepciones y flujos alternativos
+    usecase "Notificar fallo de cliente" as NotificarFallo
+    usecase "Recuperar ejecución pendiente" as Recuperar
 
-  ' Excepciones y flujos alternativos
-  usecase "Notificar fallo de cliente" as NotificarFallo
-  usecase "Recuperar ejecución pendiente" as Recuperar
+    ' Relación del Actor
+    PA --> Generar
 
-  ' Relación del Actor
-  PA --> Generar
+    ' Flujos Obligatorios (Includes)
+    Generar ..> UC12 : <<include>>
+    Generar ..> Registrar : <<include>>
 
-  ' Flujos Obligatorios (Includes)
-  Generar ..> UC12 : <<include>>\n(Se emite y envía)
-  Generar ..> Registrar : <<include>>\n(Éxitos y fallos)
-
-  ' Flujos Alternativos y Excepciones (Extends)
-  UC16 .up.> Generar : <<extend>>\n(Requiere aprobación)
-  NotificarFallo .up.> Generar : <<extend>>\n(Error en un cliente concreto)
-  Recuperar .up.> Generar : <<extend>>\n(Fallo en el sistema)
-
-  ' Nota de requisitos forzada abajo
-  note " **Requisitos:** \n FR-040, FR-041, FR-044, FR-061, FR-110 \n NFR-09, NFR-21 \n\n **Internamente incluye:** \n Filtrar suscripciones válidas \n y calcular prorrateos (FR-041)." as NotaReq
-  Generar -down- NotaReq
-
+    ' Flujos Alternativos y Excepciones (Extends)
+    UC16 ..> Generar : <<extend>>
+    NotificarFallo ..> Generar : <<extend>>
+    Recuperar ..> Generar : <<extend>>
+  }
 @enduml

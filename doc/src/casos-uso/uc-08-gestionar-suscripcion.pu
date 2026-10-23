@@ -26,9 +26,9 @@
         UC_Suscripcion <.. UC_Excepcion : <<extend>>
     }
 
-    ' Nota situada abajo a la derecha, junto al caso correspondiente
-    note right of UC_ValidarDatos
-    <b>Regla de negocio (FR-033 / FR-079):</b>
+    ' Nota situada abajo a la izquierda, junto al caso correspondiente
+    note left of UC_ValidarDatos
+    <b>Regla de negocio:</b>
     Descuentos, meses gratuitos o precios
     pactados quedan registrados de forma explícita
     y requieren aprobación previa de un Administrador.

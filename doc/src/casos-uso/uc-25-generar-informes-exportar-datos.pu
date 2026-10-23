@@ -4,7 +4,7 @@
 
     actor "Administrador" as Admin
 
-    rectangle "UC-25: Generar informes y exportar datos" {
+    rectangle "uc-25: Generar informes y exportar datos" {
         usecase "Seleccionar tipo de informe y filtros" as UC_Filtros
         usecase "Generar informe" as UC_Generar
         usecase "Revisar y exportar informe (CSV/PDF)" as UC_Exportar

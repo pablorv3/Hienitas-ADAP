@@ -11,26 +11,16 @@
     rectangle "UC-09: Revisar rango de tarifa anual" {
         usecase "Revisar facturación y rango de tarifa" as UC_Revisar
         usecase "Calcular y proponer nuevo rango" as UC_Proponer
-        usecase "Corregir revisión antigua" as UC_Corregir
         usecase "Rechazar cambio de tarifa" as UC_Rechazar
         usecase "Aplazar revisión pendiente" as UC_Aplazar
 
         ' Inclusión obligatoria
-        UC_Revisar ..> UC_Proponer : <<include>>
+        UC_Revisar <.. UC_Proponer : <<extend>>
 
         ' Extensiones según decisión o datos
         UC_Revisar <.. UC_Aplazar : <<extend>>
         UC_Revisar <.. UC_Rechazar : <<extend>>
-        UC_Revisar <.. UC_Corregir : <<extend>>
     }
-
-    ' Nota situada abajo a la derecha, junto al caso correspondiente
-    note right of UC_Proponer
-    <b>Política tarifaria (FR-036 / E1):</b>
-    La nueva tarifa aplica únicamente desde su fecha
-    de efecto. Las correcciones calculan el impacto
-    pero nunca reescriben facturas ya emitidas.
-    end note
 
     ' Asociaciones simples
     UO -- UC_Revisar

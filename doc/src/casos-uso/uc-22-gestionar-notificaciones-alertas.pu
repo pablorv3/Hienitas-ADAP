@@ -2,13 +2,13 @@
     left to right direction
     skinparam packageStyle rectangle
 
-    actor "Usuario Interno" as UI
+    actor "Usuario Operativo" as UI
     actor "Administrador" as Admin
 
     ' Herencia de actores
     Admin -|> UI
 
-    rectangle "UC-22: Gestionar notificaciones y alertas" {
+    rectangle "uc-22: Gestionar notificaciones y alertas" {
         usecase "Consultar bandeja de notificaciones" as UC_Consultar
         usecase "Marcar notificación como leída" as UC_Marcar
         usecase "Configurar canales de notificación y alertas" as UC_Configurar

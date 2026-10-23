@@ -7,7 +7,7 @@
     rectangle "UC-03: Gestionar asignación de clientes" {
         usecase "Gestionar asignación\nde clientes" as UC_Gestionar
         usecase "Asignar uno o varios clientes" as UC_Asignar
-        usecase "Mostrar alcance y confirmar\nla operación" as UC_Confirmar
+        usecase "Mostrar rango de modificación y confirmar\nla operación" as UC_Confirmar
         usecase "Desasignar cliente sin nuevo\nresponsable inmediato" as UC_Desasignar
         usecase "Delegar clientes temporalmente" as UC_Delegar
 
@@ -21,16 +21,10 @@
     }
 
     note right of UC_Asignar
-      <b>Reglas (FR-008 / FR-013 a FR-016 / FR-122 a FR-124):</b>
-      El administrador puede asignar y desasignar clientes individualmente o en bloque.
-      En el flujo de asignación, el sistema muestra cuántos elementos resultarán
-      afectados y solicita confirmación antes de aplicar el cambio.
-      Al cambiar el responsable, las tareas pendientes pasan al nuevo responsable.
-      El resultado informa de éxitos y errores por elemento; si algún cliente no puede
-      reasignarse, se indica el problema y se continúa con los demás.
-      La delegación caduca al terminar el intervalo indicado.
-      Se conserva quién realizó las acciones anteriores y los cambios quedan auditados.
-      Un usuario operativo no puede darse a sí mismo acceso a otro cliente.
+      <b>Reglas:</b>
+      - Solicita confirmación antes de aplicar el cambio.
+      - Al cambiar el responsable, las tareas pendientes pasan al nuevo responsable.
+      - Se conserva quién realizó las acciones anteriores y los cambios quedan auditados.
     end note
 
     Admin -- UC_Gestionar

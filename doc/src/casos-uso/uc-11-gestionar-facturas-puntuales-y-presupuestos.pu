@@ -4,7 +4,7 @@
 
   actor "Usuario Operativo" as UO
 
-  package "Caso de uso-11 Gestionar facturas puntuales y presupuestos" {
+  rectangle "uc-11 Gestionar facturas puntuales y presupuestos" {
       usecase "Crear factura puntual" as CrearFactura
       usecase "Añadir líneas de concepto" as AnadirLineas
       usecase "Calcular bases, impuestos y total" as Calcular
@@ -16,14 +16,12 @@
       usecase "Corregir / Eliminar borrador" as GestionarBorrador
       
       usecase "Mostrar error (Datos inválidos)" as ErrorDatos
-
-
-  usecase "Modificar factura emitida" as UC15
+     usecase "Modificar factura emitida" as UC15
 
   ' Relaciones del Actor Principal
-  UO --> CrearFactura
-  UO --> CrearPresupuesto
-  UO --> GestionarBorrador
+  UO -- CrearFactura
+  UO -- CrearPresupuesto
+  UO -- GestionarBorrador
 
   ' Flujo Principal (Includes)
   CrearFactura ..> AnadirLineas : <<include>>
@@ -31,17 +29,8 @@
   CrearFactura ..> GuardarBorrador : <<include>>
 
   ' Flujos Alternativos (Extends y Includes)
-  ConvertirPresupuesto .up.> CrearPresupuesto : <<extend>>\n(si es aceptado)
-  ConvertirPresupuesto ..> CrearFactura : <<include>>
+  ConvertirPresupuesto .up.> CrearPresupuesto : <<extend>>
 
   ' Excepciones (Extends)
-  ErrorDatos .up.> AnadirLineas : <<extend>>\n(E1: Datos de línea inválidos)
-  UC15 .up.> CrearFactura : <<extend>>\n(E2: Factura ya emitida)
-
-  note bottom of CrearFactura
-    **Requisitos:** 
-    FR-010, FR-044, FR-047, FR-058
-    **Precondición:** 
-    Cliente existe y está asignado al usuario.
-  end note
+  UC15 .up.> CrearFactura : <<extend>>
 @enduml
