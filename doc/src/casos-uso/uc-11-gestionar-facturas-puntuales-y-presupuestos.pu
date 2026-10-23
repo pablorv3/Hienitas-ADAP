@@ -1,0 +1,47 @@
+@startuml uc-11
+  left to right direction
+
+
+  actor "Usuario Operativo" as UO
+
+  package "Caso de uso-11 Gestionar facturas puntuales y presupuestos" {
+      usecase "Crear factura puntual" as CrearFactura
+      usecase "Añadir líneas de concepto" as AnadirLineas
+      usecase "Calcular bases, impuestos y total" as Calcular
+      usecase "Guardar como borrador" as GuardarBorrador
+      
+      usecase "Crear presupuesto" as CrearPresupuesto
+      usecase "Convertir presupuesto en factura" as ConvertirPresupuesto
+      
+      usecase "Corregir / Eliminar borrador" as GestionarBorrador
+      
+      usecase "Mostrar error (Datos inválidos)" as ErrorDatos
+
+
+  usecase "Modificar factura emitida" as UC15
+
+  ' Relaciones del Actor Principal
+  UO --> CrearFactura
+  UO --> CrearPresupuesto
+  UO --> GestionarBorrador
+
+  ' Flujo Principal (Includes)
+  CrearFactura ..> AnadirLineas : <<include>>
+  AnadirLineas ..> Calcular : <<include>>
+  CrearFactura ..> GuardarBorrador : <<include>>
+
+  ' Flujos Alternativos (Extends y Includes)
+  ConvertirPresupuesto .up.> CrearPresupuesto : <<extend>>\n(si es aceptado)
+  ConvertirPresupuesto ..> CrearFactura : <<include>>
+
+  ' Excepciones (Extends)
+  ErrorDatos .up.> AnadirLineas : <<extend>>\n(E1: Datos de línea inválidos)
+  UC15 .up.> CrearFactura : <<extend>>\n(E2: Factura ya emitida)
+
+  note bottom of CrearFactura
+    **Requisitos:** 
+    FR-010, FR-044, FR-047, FR-058
+    **Precondición:** 
+    Cliente existe y está asignado al usuario.
+  end note
+@enduml
