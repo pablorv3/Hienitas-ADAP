@@ -113,7 +113,7 @@ Todas las reuniones fueron presenciales y participaron los seis miembros del equ
 | 2   | 30/09/2026 | 1 h 45 min | Equipo           | Estudio y análisis de los requisitos funcionales y no funcionales.                                                             |
 | 3   | 07/10/2026 | 1 h 45 min | Equipo           | Revisión del documento de requisitos y planteamiento del Sprint 2\. Ampliación del documento de requisitos.                    |
 | 4   | 21/10/2026 | 1 h 45 min | Equipo           | Sprint Planning del Sprint 3; desarrollo de las especificaciones de los casos de uso.                                          |
-| 6   | 23/10/2026 | 2 h        | Equipo           | Revisión de las especificaciones de los casos de uso, desarrollo retoque de los diagramas UML y elaboración del informe Scrum. |
+| 5   | 23/10/2026 | 2 h        | Equipo           | Revisión de las especificaciones de los casos de uso, desarrollo retoque de los diagramas UML y elaboración del informe Scrum. |
 
 4\. Problemas y riesgos
 
