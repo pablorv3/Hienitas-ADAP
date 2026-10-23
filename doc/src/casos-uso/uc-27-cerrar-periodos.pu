@@ -1,0 +1,36 @@
+@startuml uc-27
+    left to right direction
+    skinparam packageStyle rectangle
+
+    actor "Administrador" as Admin
+
+    rectangle "UC-27: Cerrar periodos" {
+        usecase "Cerrar periodo administrativo" as UC_Cerrar
+        usecase "Revisar resumen y elementos\npendientes del periodo" as UC_Resumen
+        usecase "Reabrir periodo cerrado" as UC_Reabrir
+
+        ' Inclusión obligatoria: antes de cerrar se revisa el periodo
+        UC_Cerrar ..> UC_Resumen : <<include>>
+
+        ' Flujo alternativo
+        UC_Cerrar <.. UC_Reabrir : <<extend>>
+    }
+
+    ' Nota sobre el efecto del cierre
+    note right of UC_Cerrar
+    <b>Regla de negocio (FR-059, FR-060 / RB-08):</b>
+    En un periodo cerrado no se permiten cambios
+    ordinarios en las facturas; solo mediante un
+    procedimiento excepcional y auditado.
+    <i>Pendiente (Q-08): se asume cierre manual.</i>
+    end note
+
+    note bottom of UC_Reabrir
+    Requiere permiso superior y motivo.
+    El cierre y la reapertura quedan auditados.
+    end note
+
+    ' Asociación simple
+    Admin -- UC_Cerrar
+
+@enduml
