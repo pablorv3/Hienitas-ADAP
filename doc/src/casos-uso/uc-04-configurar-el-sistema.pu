@@ -1,0 +1,36 @@
+@startuml uc-04
+    left to right direction
+    skinparam packageStyle rectangle
+
+    actor "Superadministrador" as SA
+
+    rectangle "UC-04: Configurar el sistema" {
+        usecase "Configurar el sistema" as UC_Configurar
+        usecase "Validar parámetros\nde configuración" as UC_Validar
+        usecase "Confirmar aplicación\nde cambios" as UC_Confirmar
+        usecase "Simular o previsualizar\ncambios delicados" as UC_Previsualizar
+
+        ' La validación y la confirmación forman parte del flujo principal.
+        UC_Configurar ..> UC_Validar : <<include>>
+        UC_Configurar ..> UC_Confirmar : <<include>>
+
+        ' La simulación se ofrece para cambios delicados.
+        UC_Configurar <.. UC_Previsualizar : <<extend>>
+    }
+
+    note right of UC_Validar
+      <b>Reglas de configuración (FR-002 / FR-022 / FR-052 / FR-072 / FR-086 / FR-102 a FR-105 / NFR-08):</b>
+      Incluye plazo de pago, cadencia de recordatorios, dominio de correo permitido,
+      datos fiscales de Turbine, logo y plantilla, series, monedas habilitadas,
+      impuestos, umbrales de aprobación, canales de notificación, políticas de
+      automatización y calendario laboral.
+      El periodo de conservación de los archivos exportados es configurable; pueden
+      regenerarse si los datos y los permisos lo permiten.
+      Los valores no válidos se rechazan indicando el motivo. Los cambios quedan
+      auditados, se aplican a futuras operaciones y no modifican facturas ya emitidas.
+      Los cambios delicados pueden simularse antes de aplicarlos definitivamente.
+      El sistema debe mantenerse simple, funcional y fácil de mantener.
+    end note
+
+    SA -- UC_Configurar
+@enduml
