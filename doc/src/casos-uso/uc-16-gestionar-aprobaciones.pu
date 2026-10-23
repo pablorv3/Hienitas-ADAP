@@ -1,0 +1,31 @@
+@startuml uc-16
+left to right direction
+skinparam packageStyle rectangle
+
+actor "Usuario operativo\n(Solicitante)" as UO
+actor "Administrador\n(Aprobador)" as Admin
+actor "Superadministrador" as SuperAdmin
+
+package "Sistema de Facturación" {
+  usecase "UC-16 Gestionar aprobaciones" as UC16
+  usecase "Solicitar aprobación de\noperación sensible" as Solicitar
+  usecase "Aprobar / Rechazar solicitud" as Resolver
+  usecase "Reasignar aprobación" as Reasignar
+}
+
+UO --> Solicitar
+Admin --> Resolver
+Admin --> Reasignar
+SuperAdmin --> Resolver
+
+Solicitar ..> UC16 : <<include>>
+Resolver ..> UC16 : <<include>>
+Reasignar ..> UC16 : <<extend>>
+
+note right of UC16
+  Operaciones sensibles:
+  descuento, factura inusual,
+  cambio de rango, rectificativa,
+  cancelación de deuda.
+end note
+@enduml
