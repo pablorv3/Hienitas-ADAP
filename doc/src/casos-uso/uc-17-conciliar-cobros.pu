@@ -1,23 +1,34 @@
 @startuml uc-17
-left to right direction
 
-actor "Sistema de pagos (externo)" as SP
 actor "Usuario operativo" as UO
+actor "Sistema de pagos (externo)" as SP
 
 rectangle "uc-17 Conciliar cobros" {
-  usecase "Conciliar cobros" as UC17
-  usecase "Conciliación automática" as Auto
-  usecase "Conciliación manual\n(anomalia)" as Manual
-  usecase "Revisar diferencia de importe" as RevDiff
-  usecase "Revertir conciliación" as Revert
-
-
-  SP -- Auto
-  UO -- UC17 
-
-  Auto <.. UC17 : <<include>>
-  Manual ..> UC17 : <<extend>>
-  RevDiff ..> UC17 : <<extend>>
-  Revert ..> UC17 : <<extend>>
+    usecase "Conciliar cobros" as UC_Base
+    usecase "Conciliación automática" as UC_Auto
+    
+    usecase "Conciliar manualmente\n(Sin referencia clara)" as UC_Manual
+    usecase "Revisar diferencia\nde importe" as UC_Dif
+    usecase "Revertir conciliación" as UC_Rev
+    usecase "Ignorar cobro\nduplicado (E1)" as UC_Dup
 }
+
+' Flujo Principal e Includes
+UO -- UC_Base
+UC_Auto -- SP
+UC_Base ..> UC_Auto : <<include>>
+
+' Flujos Alternativos (A1, A3) hacia el Caso Base
+UC_Dif ..> UC_Base : <<extend>>
+UC_Rev ..> UC_Base : <<extend>>
+
+' Flujos Alternativos (A2, E1) hacia la Conciliación Automática
+UC_Manual ..> UC_Auto : <<extend>>
+UC_Dup ..> UC_Auto : <<extend>>
+
+' Interacciones del usuario operativo con las extensiones
+UO -- UC_Manual
+UO -- UC_Dif
+UO -- UC_Rev
+
 @enduml

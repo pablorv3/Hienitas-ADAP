@@ -15,8 +15,7 @@
       
       usecase "Corregir / Eliminar borrador" as GestionarBorrador
       
-      usecase "Mostrar error (Datos inválidos)" as ErrorDatos
-     usecase "Modificar factura emitida" as UC15
+      usecase "Modificar factura emitida" as UC15
 
   ' Relaciones del Actor Principal
   UO -- CrearFactura

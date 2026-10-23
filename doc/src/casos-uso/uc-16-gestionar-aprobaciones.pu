@@ -4,8 +4,7 @@ left to right direction
 actor "Usuario operativo" as UO
 actor "Administrador" as Admin
 
-rectangle "uc-16: Gestionar Aprobacion" {
-  usecase "Gestionar aprobaciones" as UC16
+rectangle "uc-16: Gestionar Aprobación" {
   usecase "Solicitar aprobación de\noperación sensible" as Solicitar
   usecase "Aprobar / Rechazar solicitud" as Resolver
   usecase "Añadir Comentario" as Comentario
@@ -14,7 +13,6 @@ rectangle "uc-16: Gestionar Aprobacion" {
 UO -- Solicitar
 Admin -- Resolver
 
-Solicitar ..> UC16 : <<include>>
-Resolver ..> UC16 : <<include>>
+Solicitar ..> Resolver : <<include>>
 Resolver <.. Comentario : <<extend>>
 @enduml

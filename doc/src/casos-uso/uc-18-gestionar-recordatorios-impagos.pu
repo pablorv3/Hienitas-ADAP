@@ -1,11 +1,11 @@
 @startuml uc-18
-left to right direction
+
 
 actor "Procesos automáticos" as PA
 actor "Usuario operativo" as UO
 
 rectangle "uc-18 Recordatorio de impagos" {
-  usecase "UC-18 Gestionar recordatorios\ne impagos" as UC18
+  usecase "Gestionar recordatorios\ne impagos" as UC18
   usecase "Calcular vencimiento y\nenviar recordatorios previos" as Previos
   usecase "Marcar vencida e iniciar\nflujo de impago" as Impago
   usecase "Suspender recordatorios\ntemporalmente" as Suspender
