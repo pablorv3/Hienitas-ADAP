@@ -6,25 +6,34 @@
 
     rectangle "UC-03: Gestionar asignación de clientes" {
         usecase "Gestionar asignación\nde clientes" as UC_Gestionar
-        usecase "Asignar uno o varios clientes" as UC_Asignar
-        usecase "Mostrar rango de modificación y confirmar\nla operación" as UC_Confirmar
-        usecase "Desasignar cliente sin nuevo\nresponsable inmediato" as UC_Desasignar
-        usecase "Delegar clientes temporalmente" as UC_Delegar
+        usecase "Asignar titular y suplente\n(obligatorios)" as UC_Asignar
+        usecase "Mostrar alcance y confirmar\nla operación" as UC_Confirmar
+        usecase "Reasignar titular o suplente" as UC_Reasignar
+        usecase "Activar suplente por\nausencia/fallo del titular" as UC_ActivarSuplente
 
-        ' La asignación, la desasignación y la delegación son operaciones de la gestión.
+        ' La asignación, la reasignación y la activación del suplente son operaciones de la gestión.
         UC_Gestionar <.. UC_Asignar : <<extend>>
-        UC_Gestionar <.. UC_Desasignar : <<extend>>
-        UC_Gestionar <.. UC_Delegar : <<extend>>
+        UC_Gestionar <.. UC_Reasignar : <<extend>>
+        UC_Gestionar <.. UC_ActivarSuplente : <<extend>>
 
         ' En el flujo de asignación se muestra el alcance y se solicita confirmación.
         UC_Asignar ..> UC_Confirmar : <<include>>
     }
 
     note right of UC_Asignar
-      <b>Reglas:</b>
-      - Solicita confirmación antes de aplicar el cambio.
-      - Al cambiar el responsable, las tareas pendientes pasan al nuevo responsable.
-      - Se conserva quién realizó las acciones anteriores y los cambios quedan auditados.
+      <b>Reglas (FR-008 / FR-013 a FR-016 / FR-014.1 / FR-026 / FR-122 a FR-124):</b>
+      El administrador gestiona las asignaciones individualmente o en bloque.
+      Cada cliente debe tener asignados obligatoriamente DOS usuarios operativos:
+      uno titular (principal) y otro suplente (de respaldo).
+      Si falla o se ausenta el titular, el suplente asume la gestión del cliente.
+      No se permite que el titular y el suplente sean la misma persona.
+      En el flujo de asignación, el sistema muestra cuántos elementos resultarán
+      afectados y solicita confirmación antes de aplicar el cambio.
+      Al relevar o cambiar el responsable, las tareas pendientes se transfieren.
+      El resultado informa de éxitos y errores por elemento; si algún cliente no puede
+      reasignarse, se indica el problema y se continúa con los demás.
+      Se conserva quién realizó las acciones anteriores y los cambios quedan auditados.
+      Un usuario operativo no puede darse a sí mismo acceso a otro cliente.
     end note
 
     Admin -- UC_Gestionar
