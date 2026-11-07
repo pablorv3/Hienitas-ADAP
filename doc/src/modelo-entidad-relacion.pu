@@ -1,0 +1,255 @@
+@startuml E/R
+  top to bottom direction
+  skinparam linetype ortho
+  skinparam nodesep 100
+  skinparam ranksep 80
+  hide circle
+  skinparam class {
+      BackgroundColor LightGray
+      ArrowColor Black
+      BorderColor Black
+      HeaderBackgroundColor Grey
+  }
+
+  title Modelo Físico ER Turbine
+
+  ' ==========================================
+  ' MÓDULO: IDENTIDAD Y CONFIGURACIÓN
+  ' ==========================================
+  entity "USUARIO" {
+    * id : UUID <<PK>>
+    --
+    * email : VARCHAR(255) <<UK>>
+    * password : VARCHAR(255)
+    * rol : VARCHAR(50)
+    * activo : BOOLEAN
+    * creadoEn : TIMESTAMP
+  }
+
+  entity "CONFIGURACION" {
+    * clave : VARCHAR(100) <<PK>>
+    --
+    * usuarioID : UUID <<FK>>
+    * valor : TEXT
+    * fechaActualizacion : TIMESTAMP
+  }
+
+  ' ==========================================
+  ' MÓDULO: CLIENTES Y ETIQUETAS
+  ' ==========================================
+  entity "CLIENTE" {
+    * id : UUID <<PK>>
+    --
+    * nif : VARCHAR(50) <<UK>>
+    * nombreComercial : VARCHAR(255)
+    * razonSocial : VARCHAR(255)
+    * pais : VARCHAR(100)
+    * moneda : VARCHAR(10)
+    * impuestoRate : DECIMAL(5,2)
+    * email : VARCHAR(255)
+    telefono : VARCHAR(50)
+    * activo : BOOLEAN
+    * responsablePrincipalId : UUID <<FK>>
+    responsableSuplenteId: UUID <<FK>>
+  }
+
+  entity "ETIQUETA" {
+    * id : UUID <<PK>>
+    --
+    * nombre : VARCHAR(100) <<UK>>
+  }
+
+  ' Tabla intermedia para la relación N:M
+  entity "CLIENTE_ETIQUETA" {
+    * clienteId : UUID <<PK, FK>>
+    * etiquetaId : UUID <<PK, FK>>
+    --
+  }
+
+  entity "SUSCRIPCION" {
+    * id : UUID <<PK>>
+    --
+    * clienteId : UUID <<FK>>
+    * rangoCobro : VARCHAR(50)
+    * precioBase : DECIMAL(12,2)
+    * pausada : BOOLEAN
+    motivoPausa : VARCHAR(255)
+    fechaInicioPausa : TIMESTAMP
+  }
+
+  ' ==========================================
+  ' MÓDULO: FACTURACIÓN Y COBROS
+  ' ==========================================
+  entity "FACTURA" {
+    * id : UUID <<PK>>
+    --
+    * clienteId : UUID <<FK>>
+    facturaOriginalId : UUID <<FK>>
+    * numero : VARCHAR(100) <<UK>>
+    * serie : VARCHAR(50) <<UK>>
+    * tipo : VARCHAR(50)
+    * estadoCobro : VARCHAR(50)
+    * emitida : BOOLEAN
+    fechaEmision : TIMESTAMP
+    * fechaVencimiento : TIMESTAMP
+    * baseImponible : DECIMAL(12,2)
+    * impuestoTotal : DECIMAL(12,2)
+    * total : DECIMAL(12,2)
+    * trimestreCerrado : BOOLEAN
+  }
+
+  entity "LINEA_FACTURA" {
+    * numeroLinea : INTEGER <<PK>>
+    * facturaId : UUID <<PK, FK>>
+    --
+    * concepto : VARCHAR(255)
+    * cantidad : INTEGER
+    * precioUnitario : DECIMAL(12,2)
+    descuento : DECIMAL(12,2)
+    * impuestoRate : DECIMAL(5,2)
+  }
+
+  entity "COBRO" {
+    * id : UUID <<PK>>
+    --
+    * facturaId : UUID <<FK>>
+    ' El identificador que nos proporcione la pasarela de pago, si es que lo aporta
+    referenciaExterna : VARCHAR(255)
+    * fechaPago : TIMESTAMP
+    * importe : DECIMAL(12,2)
+  }
+
+  ' ==========================================
+  ' MÓDULO: GOBIERNO, AUDITORÍA Y ALERTAS
+  ' ==========================================
+  entity "SOLICITUD_APROBACION" {
+    * id : UUID <<PK>>
+    --
+    * tipo : VARCHAR(50)
+    * estado : VARCHAR(50)
+    * solicitanteId : UUID <<FK>>
+    aprobadorId : UUID <<FK>>
+    datosCambio : JSON
+    * fechaSolicitud : TIMESTAMP
+    fechaResolucion : TIMESTAMP
+  }
+
+  entity "AUDITORIA_LOG" {
+    * id : UUID <<PK>>
+    --
+    * usuarioId : UUID <<FK>>
+    * entidadAfectada : VARCHAR(100)
+    * entidadId : UUID
+    * accion : VARCHAR(50)
+    valoresAnteriores : JSON
+    valoresNuevos : JSON
+    * fecha : TIMESTAMP
+  }
+
+  entity "PLANTILLA_COMUNICACION" {
+    * id : UUID <<PK>>
+    --
+    * ultimoAutorId : UUID <<FK>>
+    * tipo : VARCHAR(50)
+    * canal : VARCHAR(50)
+    * asunto : VARCHAR(255)
+    * cuerpo : TEXT
+    * version : INTEGER
+  }
+
+  entity "RECIBE_NOTIFICACION"{
+    * notificacionID: UUID <<PK, FK>>
+    * usuarioID: UUID <<PK,FK>>
+    --
+    * fechaEnvio: TIEMSTAMP
+    * leida: BOOLEAN
+    resuelta: BOOLEAN
+  }
+
+  entity "NOTIFICACION" {
+    * id : UUID <<PK>>
+    --
+    * titulo : VARCHAR(255)
+    * mensaje : TEXT
+    * requiereAccion : BOOLEAN
+  }
+
+  ' ==========================================
+  ' MÓDULO: SOPORTE, TICKETS Y ADJUNTOS
+  ' ==========================================
+  entity "INCIDENCIA" {
+    * id : UUID <<PK>>
+    --
+    * clienteId : UUID <<FK>>
+    facturaId : UUID <<FK>>
+    * titulo : VARCHAR(255)
+    * descripcion : TEXT
+    * estado : VARCHAR(50)
+    * creadaPorId : UUID <<FK>>
+    fechaCreacion : TIMESTAMP
+  }
+
+  entity "COMENTARIO" {
+    * id : UUID <<PK>>
+    --
+    incidenciaId : UUID <<FK>>
+    facturaId : UUID <<FK>>
+    * usuarioId : UUID <<FK>>
+    * texto : TEXT
+    * restringidoAdmin : BOOLEAN
+    * fechaCreacion : TIMESTAMP
+  }
+
+  entity "ADJUNTO" {
+    * id : UUID <<PK>>
+    --
+    clienteId : UUID <<FK>>
+    facturaId : UUID <<FK>>
+    * nombreArchivo : VARCHAR(255)
+    * rutaStorage : VARCHAR(500)
+    * tipoMime : VARCHAR(100)
+    * subidoPorId : UUID <<FK>>
+    * fechaSubida : TIMESTAMP
+  }
+
+  ' ==========================================
+  ' RELACIONES 
+  ' ==========================================
+
+  ' Usuarios (Asignaciones y Auditoría)
+  USUARIO |o--o{ CLIENTE : responsableSuplente
+  USUARIO ||--o{ CLIENTE : responsablePrincipal
+  USUARIO ||--o{ CONFIGURACION 
+  USUARIO ||--o{ AUDITORIA_LOG 
+  USUARIO ||--o{ PLANTILLA_COMUNICACION 
+  USUARIO ||--o{ RECIBE_NOTIFICACION 
+  NOTIFICACION ||--o{ RECIBE_NOTIFICACION
+
+  ' Aprobaciones
+  USUARIO ||--o{ SOLICITUD_APROBACION : solicita
+  USUARIO |o--o{ SOLICITUD_APROBACION : aprueba
+
+  ' Clientes, Etiquetas y Suscripciones
+  CLIENTE ||--o{ CLIENTE_ETIQUETA 
+  ETIQUETA ||--o{ CLIENTE_ETIQUETA 
+  CLIENTE ||--o{ SUSCRIPCION 
+
+  ' Facturación
+  CLIENTE ||--o{ FACTURA 
+  FACTURA |o--o{ FACTURA : rectifica
+  FACTURA ||--|{ LINEA_FACTURA 
+  FACTURA ||--o{ COBRO 
+
+  ' Soporte y Comunicación
+  CLIENTE ||--o{ INCIDENCIA 
+  FACTURA |o--o{ INCIDENCIA 
+  INCIDENCIA |o--o{ COMENTARIO 
+  FACTURA |o--o{ COMENTARIO 
+  USUARIO ||--o{ COMENTARIO 
+
+  ' Adjuntos
+  CLIENTE |o--o{ ADJUNTO 
+  FACTURA |o--o{ ADJUNTO 
+  USUARIO ||--o{ ADJUNTO 
+
+@enduml
