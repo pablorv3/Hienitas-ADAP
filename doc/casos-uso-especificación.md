@@ -8,7 +8,7 @@
 | Actor | Descripción |
 |---|---|
 | Usuario interno | Actor abstracto: cualquier persona autenticada de Turbine. |
-| Usuario operativo | Trabaja sobre los clientes que tiene asignados (responsable interno). |
+| Usuario operativo | Trabaja sobre los clientes que tiene asignados (como titular obligatorio o como suplente en caso de ausencia/fallo del titular). |
 | Administrador | Gestiona operaciones, clientes, facturas, asignaciones y aprobaciones. Hereda todo lo del usuario operativo, sobre todos los clientes. |
 | Superadministrador | Configuración profunda y faceta técnica. Hereda todo lo del administrador. |
 | Sistema de pagos (Stripe, simulado) | Sistema externo que informa de cobros y permite consultarlos. |
@@ -103,21 +103,23 @@ El resto de casos de uso se relacionan solo con sus actores. Las aprobaciones (U
 - **Requisitos:** FR-003, FR-004, FR-006, FR-007, FR-013, NFR-15.
 
 ### UC-03. Gestionar asignación de clientes
-- **Objetivo:** Asignar y desasignar clientes a los usuarios (individualmente o en bloque) y delegar temporalmente.
+- **Objetivo:** Asignar y reasignar a cada cliente sus dos usuarios operativos obligatorios (un responsable titular y un suplente) individualmente o en bloque.
 - **Actores:** Administrador.
 - **Precondiciones:** Existen el cliente y el usuario destino.
 - **Flujo principal:**
   1. El administrador selecciona uno o varios clientes.
-  2. Elige el usuario responsable al que asignarlos.
+  2. Elige obligatoriamente dos usuarios operativos distintos: el responsable titular y el suplente.
   3. El sistema muestra a cuántos elementos afecta y pide confirmación.
-  4. El sistema aplica la asignación, transfiere las tareas pendientes al nuevo responsable y muestra el resultado con éxitos y errores.
+  4. El sistema aplica la asignación (titular y suplente), transfiere o activa las tareas pendientes según corresponda y muestra el resultado con éxitos y errores.
 - **Flujos alternativos:**
-  - A1. Desasignar un cliente sin nuevo responsable inmediato.
-  - A2. Delegar los clientes de un usuario a otro durante un intervalo; la delegación caduca al terminar.
+  - A1. Reasignar únicamente el usuario suplente manteniendo el titular.
+  - A2. Reasignar el usuario titular transfiriendo las tareas pendientes al nuevo titular.
+  - A3. El titular no está disponible (baja, vacaciones o fallo): el suplente asume la gestión operativa del cliente y sus tareas pendientes sin perderse la titularidad.
 - **Excepciones:**
-  - E1. Algún cliente no puede reasignarse: el sistema lo indica en el resultado y continúa con los demás.
+  - E1. No se seleccionan dos usuarios o se asigna el mismo usuario como titular y suplente: el sistema no permite guardar e indica que cada cliente exige obligatoriamente dos usuarios operativos distintos.
+  - E2. Algún cliente no puede reasignarse: el sistema lo indica en el resultado y continúa con los demás.
 - **Postcondiciones:** El histórico conserva quién hizo cada acción anterior; el cambio queda auditado.
-- **Requisitos:** FR-008, FR-013 a FR-016, FR-014.1, FR-122 a FR-124.
+- **Requisitos:** FR-008, FR-013 a FR-016, FR-014.1, FR-026, FR-122 a FR-124.
 
 ### UC-04. Configurar el sistema
 - **Objetivo:** Gestionar los parámetros globales del sistema.
@@ -155,19 +157,19 @@ El resto de casos de uso se relacionan solo con sus actores. Las aprobaciones (U
 ### UC-06. Gestionar clientes
 - **Objetivo:** Dar de alta, consultar y modificar clientes de forma rápida, con sus datos fiscales, contactos, estado y etiquetas.
 - **Actores:** Usuario operativo.
-- **Precondiciones:** El usuario está autenticado y, si es operativo, el cliente está asignado a él.
+- **Precondiciones:** El usuario está autenticado y, si es operativo, el cliente está asignado a él (como titular o como suplente).
 - **Flujo principal:**
   1. El usuario inicia el alta de un cliente.
-  2. Introduce datos comerciales y fiscales (razón social, NIF, país, moneda, domicilio), personas de contacto y canales permitidos.
+  2. Introduce datos comerciales y fiscales (razón social, NIF, país, moneda, domicilio), personas de contacto, canales permitidos y los dos usuarios operativos obligatorios (titular y suplente).
   3. El sistema propone valores por defecto y comprueba duplicados por identificador fiscal.
-  4. El usuario confirma y el sistema crea el cliente con su responsable interno y estado inicial.
+  4. El usuario confirma y el sistema crea el cliente con sus dos usuarios operativos obligatorios (titular y suplente) y estado inicial.
 - **Flujos alternativos:**
   - A1. Modificar los datos, contactos, etiquetas o estado de un cliente existente.
   - A2. Consultar la ficha y el historial de eventos del cliente.
   - A3. Se detecta un posible duplicado: el sistema avisa, y el usuario decide si continúa o reutiliza la ficha. Nunca se fusionan fichas automáticamente.
   - A4. Guardar la ficha como borrador y completarla después.
 - **Excepciones:**
-  - E1. Faltan datos obligatorios o son inválidos: el sistema indica qué campo falla.
+  - E1. Faltan datos obligatorios (incluyendo la asignación de titular y suplente) o son inválidos: el sistema indica qué campo falla.
   - E2. Intento de eliminar el único contacto de facturación de un cliente activo: el sistema avisa.
 - **Postcondiciones:** El cliente queda registrado o actualizado y el cambio queda auditado.
 - **Requisitos:** FR-009, FR-017 a FR-026, FR-017.1, FR-088, FR-119 a FR-121.
@@ -248,7 +250,7 @@ El resto de casos de uso se relacionan solo con sus actores. Las aprobaciones (U
 ### UC-11. Gestionar facturas puntuales y presupuestos
 - **Objetivo:** Preparar facturas puntuales (varias líneas) y presupuestos convertibles en factura, antes de emitirlas.
 - **Actores:** Usuario operativo.
-- **Precondiciones:** El cliente existe y está asignado al usuario (si es operativo).
+- **Precondiciones:** El cliente existe y está asignado al usuario (como titular o suplente, si es operativo).
 - **Flujo principal:**
   1. El usuario crea una factura puntual para un cliente.
   2. Añade líneas con concepto, cantidad, precio, descuento e impuesto, reutilizando conceptos frecuentes del catálogo si procede.
@@ -404,7 +406,7 @@ El resto de casos de uso se relacionan solo con sus actores. Las aprobaciones (U
 ### UC-20. Gestionar incidencias de facturación
 - **Objetivo:** Dar seguimiento interno a problemas de facturación asociados a un cliente y, opcionalmente, a una factura.
 - **Actores:** Usuario operativo.
-- **Precondiciones:** El cliente existe y está asignado al usuario (si es operativo).
+- **Precondiciones:** El cliente existe y está asignado al usuario (como titular o suplente, si es operativo).
 - **Flujo principal:**
   1. El usuario abre una incidencia (por ejemplo, «NIF incorrecto» o «pago no localizado») con responsable, estado y prioridad.
   2. Añade comentarios y adjuntos (UC-21).
