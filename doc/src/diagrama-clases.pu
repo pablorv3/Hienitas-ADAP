@@ -1,0 +1,364 @@
+@startuml Diagrama_Clases_TurbineH
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+skinparam nodesep 60
+skinparam ranksep 60
+
+title Diagrama de Clases con Patrones de Diseño - TurbineH
+
+' ==========================================================
+' PAQUETE 1: DOMINIO Y PERSISTENCIA (Alineado con Modelo ER)
+' ==========================================================
+package "dominio" {
+
+  class Usuario {
+    - id : UUID
+    - email : String
+    - password : String
+    - rol : String
+    - activo : Boolean
+    - creadoEn : Timestamp
+    + autenticar(password : String) : Boolean
+    + tienePermiso(accion : String) : Boolean
+  }
+
+  class Configuracion {
+    - clave : String
+    - valor : String
+    - fechaActualizacion : Timestamp
+    + actualizarValor(nuevoValor : String) : void
+  }
+
+  class Cliente {
+    - id : UUID
+    - nif : String
+    - nombreComercial : String
+    - razonSocial : String
+    - pais : String
+    - moneda : String
+    - impuestoRate : Decimal
+    - email : String
+    - telefono : String
+    - activo : Boolean
+    + validarDatosFiscales() : Boolean
+    + puedeDarseDeBaja() : Boolean
+    + reactivar() : void
+  }
+
+  class Etiqueta {
+    - id : UUID
+    - nombre : String
+  }
+
+  class Suscripcion {
+    - id : UUID
+    - rangoCobro : String
+    - precioBase : Decimal
+    - pausada : Boolean
+    - motivoPausa : String
+    - fechaInicioPausa : Timestamp
+    + calcularImportePeriodo(fecha : Date) : Decimal
+    + pausar(motivo : String) : void
+    + reanudar() : void
+  }
+
+  class Factura {
+    - id : UUID
+    - numero : String
+    - serie : String
+    - tipo : String
+    - estadoCobro : String
+    - emitida : Boolean
+    - fechaEmision : Timestamp
+    - fechaVencimiento : Timestamp
+    - baseImponible : Decimal
+    - impuestoTotal : Decimal
+    - total : Decimal
+    - trimestreCerrado : Boolean
+    + agregarLinea(linea : LineaFactura) : void
+    + recalcularTotales() : void
+    + emitir() : void
+    + registrarCobro(cobro : Cobro) : void
+    + cancelarPorIncobrable(motivo : String) : void
+  }
+
+  class LineaFactura {
+    - numeroLinea : Integer
+    - concepto : String
+    - cantidad : Integer
+    - precioUnitario : Decimal
+    - descuento : Decimal
+    - impuestoRate : Decimal
+    + calcularSubtotal() : Decimal
+  }
+
+  class Cobro {
+    - id : UUID
+    - referenciaExterna : String
+    - fechaPago : Timestamp
+    - importe : Decimal
+  }
+
+  class SolicitudAprobacion {
+    - id : UUID
+    - tipo : String
+    - estado : String
+    - datosCambio : JSON
+    - fechaSolicitud : Timestamp
+    - fechaResolucion : Timestamp
+    + aprobar(aprobador : Usuario) : void
+    + rechazar(aprobador : Usuario, motivo : String) : void
+  }
+
+  class AuditoriaLog {
+    - id : UUID
+    - entidadAfectada : String
+    - entidadId : UUID
+    - accion : String
+    - valoresAnteriores : JSON
+    - valoresNuevos : JSON
+    - fecha : Timestamp
+  }
+
+  class PlantillaComunicacion {
+    - id : UUID
+    - tipo : String
+    - canal : String
+    - asunto : String
+    - cuerpo : String
+    - version : Integer
+    + renderizar(variables : Map) : String
+  }
+
+  class Notificacion {
+    - id : UUID
+    - titulo : String
+    - mensaje : String
+    - requiereAccion : Boolean
+  }
+
+  class RecibeNotificacion {
+    - fechaEnvio : Timestamp
+    - leida : Boolean
+    - resuelta : Boolean
+    + marcarLeida() : void
+    + marcarResuelta() : void
+  }
+
+  class Incidencia {
+    - id : UUID
+    - titulo : String
+    - descripcion : String
+    - estado : String
+    - fechaCreacion : Timestamp
+    + cerrar(resolucion : String) : void
+  }
+
+  class Comentario {
+    - id : UUID
+    - texto : String
+    - restringidoAdmin : Boolean
+    - fechaCreacion : Timestamp
+  }
+
+  class Adjunto {
+    - id : UUID
+    - nombreArchivo : String
+    - rutaStorage : String
+    - tipoMime : String
+    - fechaSubida : Timestamp
+  }
+
+  ' Relaciones del Dominio
+  Usuario "1" --> "0..*" Cliente : responsablePrincipal
+  Usuario "0..1" --> "0..*" Cliente : responsableSuplente
+  Usuario "1" --> "0..*" Configuracion
+  Usuario "1" --> "0..*" SolicitudAprobacion : solicita
+  Usuario "0..1" --> "0..*" SolicitudAprobacion : aprueba
+  Usuario "1" --> "0..*" AuditoriaLog
+  Usuario "1" --> "0..*" PlantillaComunicacion : ultimoAutor
+
+  Cliente "0..*" -- "0..*" Etiqueta
+  Cliente "1" *-- "0..*" Suscripcion
+  Cliente "1" --> "0..*" Factura
+  Cliente "1" --> "0..*" Incidencia
+  Cliente "0..1" o-- "0..*" Adjunto
+
+  Factura "0..1" --> "0..*" Factura : rectifica
+  Factura "1" *-- "1..*" LineaFactura
+  Factura "1" o-- "0..*" Cobro
+  Factura "0..1" --> "0..*" Incidencia
+  Factura "0..1" *-- "0..*" Comentario
+  Factura "0..1" o-- "0..*" Adjunto
+
+  Incidencia "0..1" *-- "0..*" Comentario
+  Usuario "1" --> "0..*" Comentario
+  Usuario "1" --> "0..*" Adjunto
+
+  Notificacion "1" -- "0..*" RecibeNotificacion
+  Usuario "1" -- "0..*" RecibeNotificacion
+}
+
+' ==========================================================
+' PAQUETE 2: PATRONES DE COMPORTAMIENTO Y CREACIÓN
+' ==========================================================
+package "negocio.reglas" {
+
+  ' --- STATE (Ciclo de vida de Factura) ---
+  interface IEstadoFactura <<State>> {
+    + editarLineas(factura : Factura, linea : LineaFactura) : void
+    + emitir(factura : Factura) : void
+    + registrarCobro(factura : Factura, cobro : Cobro) : void
+    + rectificar(factura : Factura) : Factura
+  }
+
+  class EstadoBorrador <<State>>
+  class EstadoPendiente <<State>>
+  class EstadoPagada <<State>>
+  class EstadoImpagada <<State>>
+  class EstadoIncobrable <<State>>
+
+  EstadoBorrador ..|> IEstadoFactura
+  EstadoPendiente ..|> IEstadoFactura
+  EstadoPagada ..|> IEstadoFactura
+  EstadoImpagada ..|> IEstadoFactura
+  EstadoIncobrable ..|> IEstadoFactura
+
+  Factura --> "1" IEstadoFactura : estadoActual
+
+  ' --- STRATEGY (Cálculo de tarifas y prorrateos) ---
+  interface IEstrategiaCalculoTarifa <<Strategy>> {
+    + calcular(suscripcion : Suscripcion, fecha : Date) : Decimal
+  }
+
+  class CalculoEstandarStrategy <<Strategy>>
+  class CalculoProrrateoAltaStrategy <<Strategy>>
+  class CalculoExcepcionComercialStrategy <<Strategy>>
+
+  CalculoEstandarStrategy ..|> IEstrategiaCalculoTarifa
+  CalculoProrrateoAltaStrategy ..|> IEstrategiaCalculoTarifa
+  CalculoExcepcionComercialStrategy ..|> IEstrategiaCalculoTarifa
+
+  Suscripcion --> "1" IEstrategiaCalculoTarifa : estrategiaTarifa
+
+  ' --- FACTORY METHOD (Creación de tipos de Factura) ---
+  abstract class FacturaFactory <<Factory>> {
+    + {abstract} crearFactura(cliente : Cliente) : Factura
+  }
+
+  class FacturaRecurrenteFactory <<Factory>>
+  class FacturaPuntualFactory <<Factory>>
+  class FacturaRectificativaFactory <<Factory>>
+
+  FacturaRecurrenteFactory --|> FacturaFactory
+  FacturaPuntualFactory --|> FacturaFactory
+  FacturaRectificativaFactory --|> FacturaFactory
+  FacturaFactory ..> Factura : crea
+}
+
+' ==========================================================
+' PAQUETE 3: EVENTOS Y AUDITORÍA (Observer)
+' ==========================================================
+package "negocio.eventos" {
+
+  class GestorEventosDominio <<Subject>> {
+    - observadores : List<IObservadorEvento>
+    + suscribir(obs : IObservadorEvento) : void
+    + desuscribir(obs : IObservadorEvento) : void
+    + publicarEvento(tipo : String, payload : Map) : void
+  }
+
+  interface IObservadorEvento <<Observer>> {
+    + actualizar(tipo : String, payload : Map) : void
+  }
+
+  class NotificacionObserver <<Observer>> {
+    + actualizar(tipo : String, payload : Map) : void
+  }
+
+  class AuditoriaObserver <<Observer>> {
+    + actualizar(tipo : String, payload : Map) : void
+  }
+
+  GestorEventosDominio o-- "0..*" IObservadorEvento
+  NotificacionObserver ..|> IObservadorEvento
+  AuditoriaObserver ..|> IObservadorEvento
+  NotificacionObserver ..> Notificacion : genera
+  AuditoriaObserver ..> AuditoriaLog : registra
+}
+
+' ==========================================================
+' PAQUETE 4: INTEGRACIONES, DOCUMENTOS Y FACHADA
+' ==========================================================
+package "infraestructura" {
+
+  ' --- FACADE (Punto de entrada API REST y Workers) ---
+  class FacturacionFacade <<Facade>> {
+    + generarFacturacionMensual(fecha : Date) : ResumenEjecucion
+    + emitirYEnviarFactura(facturaId : UUID) : void
+    + conciliarPagoExterno(referencia : String) : void
+    + exportarFacturaPDF(facturaId : UUID, esBorrador : Boolean) : byte[]
+  }
+
+  ' --- ADAPTER (Integraciones simuladas/externas) ---
+  interface IConsultarCobroExterno <<Adapter>> {
+    + obtenerCobrosConfirmados(desde : Timestamp) : List<Cobro>
+    + consultarEstadoPago(referencia : String) : String
+  }
+
+  class StripeSimuladoAdapter <<Adapter>> {
+    + obtenerCobrosConfirmados(desde : Timestamp) : List<Cobro>
+    + consultarEstadoPago(referencia : String) : String
+  }
+
+  interface ICanalMensajeria <<Adapter>> {
+    + enviar(destinatario : String, asunto : String, cuerpo : String, adjunto : byte[]) : Boolean
+  }
+
+  class EmailSimuladoAdapter <<Adapter>>
+  class WhatsAppSimuladoAdapter <<Adapter>>
+
+  StripeSimuladoAdapter ..|> IConsultarCobroExterno
+  EmailSimuladoAdapter ..|> ICanalMensajeria
+  WhatsAppSimuladoAdapter ..|> ICanalMensajeria
+
+  ' --- DECORATOR (Renderizado PDF de Facturas e Informes) ---
+  interface IDocumentoPDF <<Decorator>> {
+    + generarBytes() : byte[]
+  }
+
+  class FacturaPDFBase <<Decorator>> {
+    - factura : Factura
+    + generarBytes() : byte[]
+  }
+
+  abstract class DocumentoPDFDecorator <<Decorator>> {
+    # envuelto : IDocumentoPDF
+    + generarBytes() : byte[]
+  }
+
+  class MarcaAguaBorradorDecorator <<Decorator>> {
+    + generarBytes() : byte[]
+  }
+
+  class CabeceraAuditoriaDecorator <<Decorator>> {
+    - usuario : Usuario
+    - filtros : String
+    + generarBytes() : byte[]
+  }
+
+  FacturaPDFBase ..|> IDocumentoPDF
+  DocumentoPDFDecorator ..|> IDocumentoPDF
+  DocumentoPDFDecorator o-- "1" IDocumentoPDF
+  MarcaAguaBorradorDecorator --|> DocumentoPDFDecorator
+  CabeceraAuditoriaDecorator --|> DocumentoPDFDecorator
+
+  ' Conexiones de la Fachada
+  FacturacionFacade --> GestorEventosDominio
+  FacturacionFacade --> IConsultarCobroExterno
+  FacturacionFacade --> ICanalMensajeria
+  FacturacionFacade ..> FacturaFactory
+  FacturacionFacade ..> IDocumentoPDF
+}
+
+@enduml
