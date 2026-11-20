@@ -51,6 +51,7 @@
     * activo : BOOLEAN
     * responsablePrincipalId : UUID <<FK>>
     responsableSuplenteId: UUID <<FK>>
+    * creadoEn: TIMESTAMP
   }
 
   entity "ETIQUETA" {
@@ -75,6 +76,8 @@
     * pausada : BOOLEAN
     motivoPausa : VARCHAR(255)
     fechaInicioPausa : TIMESTAMP
+    fechaFinPausa: TIMESTAMP
+    * creadoEn: TIMESTAMP
   }
 
   ' ==========================================
@@ -129,7 +132,7 @@
     * estado : VARCHAR(50)
     * solicitanteId : UUID <<FK>>
     aprobadorId : UUID <<FK>>
-    datosCambio : JSON
+    * datosCambio : JSON
     * fechaSolicitud : TIMESTAMP
     fechaResolucion : TIMESTAMP
   }
@@ -155,6 +158,7 @@
     * asunto : VARCHAR(255)
     * cuerpo : TEXT
     * version : INTEGER
+    * activa : boolean
   }
 
   entity "RECIBE_NOTIFICACION"{
@@ -186,7 +190,8 @@
     * descripcion : TEXT
     * estado : VARCHAR(50)
     * creadaPorId : UUID <<FK>>
-    fechaCreacion : TIMESTAMP
+    * fechaCreacion : TIMESTAMP
+    fechaResolucion : TIMESTAMP
   }
 
   entity "COMENTARIO" {
@@ -208,6 +213,7 @@
     * nombreArchivo : VARCHAR(255)
     * rutaStorage : VARCHAR(500)
     * tipoMime : VARCHAR(100)
+    * tamanoBytes : BIGINT
     * subidoPorId : UUID <<FK>>
     * fechaSubida : TIMESTAMP
   }

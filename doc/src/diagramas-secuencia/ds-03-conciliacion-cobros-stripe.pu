@@ -1,0 +1,89 @@
+@startuml DS03_Conciliacion_Cobros_Stripe
+    autonumber
+    skinparam sequenceMessageAlign center
+    skinparam responseMessageBelowArrow true
+
+    title DS-03: Conciliación de Cobros Externos con Stripe (UC-17)
+
+    participant "cron : PlanificadorCron" as Cron
+    participant "worker : WorkerConciliacion" as Worker
+    participant "facade : FacturacionFacade" as Facade
+    participant "stripe : StripeSimuladoAdapter" as Stripe
+    participant "db : BaseDatosRelacional" as DB
+    participant "cobro : Cobro" as Cobro
+    participant "factura : Factura" as Fac
+    participant "estado : EstadoPendiente" as EstPend
+    participant "eventos : GestorEventosDominio" as Eventos
+
+    Cron -> Worker : Disparar sincronización periódica de cobros
+    activate Worker
+
+    Worker -> Facade : conciliarCobrosConfirmados(ultimaSincronizacion)
+    activate Facade
+
+    Facade -> Stripe : obtenerCobrosConfirmados(desde)
+    activate Stripe
+    Stripe --> Facade : cobrosConfirmados : List<Cobro>
+    deactivate Stripe
+
+    loop Para cada movimiento en cobrosConfirmados
+        Facade -> Stripe : consultarEstadoPago(movimiento.referenciaExterna)
+        activate Stripe
+        Stripe --> Facade : estadoExterno ("PAID")
+        deactivate Stripe
+
+        Facade -> DB : buscarFacturaPorReferencia(movimiento.referenciaExterna)
+        activate DB
+        DB --> Facade : factura : Factura
+        deactivate DB
+
+        alt Factura no identificada (sin referencia válida)
+            Facade -> DB : registrarCobroPendienteAsignacion(movimiento)
+            activate DB
+            DB --> Facade : ok
+            deactivate DB
+
+            Facade -> Eventos : publicarEvento("COBRO_NO_IDENTIFICADO", payload)
+            activate Eventos
+            Eventos --> Facade : void
+            deactivate Eventos
+        else Factura localizada
+            create Cobro
+            Facade -> Cobro : <<create>>(referenciaExterna, fechaPago, importe)
+
+            alt Importe exacto (movimiento.importe == factura.total)
+                Facade -> Fac : registrarCobro(cobro)
+                activate Fac
+                Fac -> EstPend : registrarCobro(factura, cobro)
+                activate EstPend
+                EstPend -> Fac : estadoCobro = "PAGADA", estadoActual = EstadoPagada
+                EstPend --> Fac : ok
+                deactivate EstPend
+                Fac --> Facade : ok
+                deactivate Fac
+
+                Facade -> Eventos : publicarEvento("FACTURA_PAGADA", payload)
+                activate Eventos
+                Eventos --> Facade : void
+                deactivate Eventos
+            else Discrepancia de importe (pago parcial o sobrepago - RB-10)
+                Facade -> Fac : registrarCobroConDiscrepancia(cobro)
+                activate Fac
+                Fac --> Facade : diferenciaDetectada : Decimal
+                deactivate Fac
+
+                Facade -> Eventos : publicarEvento("DISCREPANCIA_IMPORTE_COBRO", payload)
+                activate Eventos
+                note right of Eventos: NotificacionObserver genera alerta\ncon requiereAccion = true (FR-068)
+                Eventos --> Facade : void
+                deactivate Eventos
+            end
+        end
+    end
+
+    Facade --> Worker : Resumen conciliación completada
+    deactivate Facade
+
+    Worker --> Cron : Tarea finalizada
+    deactivate Worker
+@enduml

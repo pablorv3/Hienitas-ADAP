@@ -1,0 +1,88 @@
+@startuml DS07_Importacion_Clientes_CSV
+    autonumber
+    skinparam sequenceMessageAlign center
+    skinparam responseMessageBelowArrow true
+
+    title DS-07: Importación Masiva de Clientes desde CSV (UC-07)
+
+    actor "Usuario Operativo" as UO
+    participant "UI : Frontend SPA" as UI
+    participant "API : ControladorClientes" as API
+    participant "worker : WorkerImportacionCSV" as Worker
+    participant "db : BaseDatosRelacional" as DB
+    participant "cliente : Cliente" as Cli
+    participant "eventos : GestorEventosDominio" as Eventos
+    participant "auditoriaObs : AuditoriaObserver" as AudObs
+
+    UO -> UI : Selecciona fichero CSV y mapea columnas
+    activate UI
+
+    UI -> API : POST /api/clientes/csv-preview (fichero + mapeo)
+    activate API
+
+    API -> Worker : analizarYPrevisualizarCSV(fichero, mapeo)
+    activate Worker
+
+    alt Formato o codificación CSV inválidos (E1)
+        Worker --> API : ErrorEstructuraCSV
+        deactivate Worker
+        API --> UI : 400 Bad Request (Formato no reconocido)
+        deactivate API
+        UI --> UO : Muestra error de lectura del fichero
+        deactivate UI
+    else Estructura CSV válida
+        Worker -> DB : consultarNIFsExistentes()
+        activate DB
+        DB --> Worker : nifsRegistrados : Set<String>
+        deactivate DB
+
+        Worker -> Worker : validarCamposYDetectarDuplicados(filas, nifsRegistrados)
+        Worker --> API : resumenPreview (validos, duplicados, errores)
+        deactivate Worker
+
+        API --> UI : 200 OK (Previsualización con alertas de duplicados)
+        deactivate API
+        UI --> UO : Muestra tabla previa antes de confirmar
+        deactivate UI
+
+        alt Usuario cancela para corregir el fichero (A1)
+            UO -> UI : Pulsa "Cancelar"
+            activate UI
+            UI --> UO : Descarta previsualización sin guardar cambios
+            deactivate UI
+        else Usuario confirma importar filas válidas (A2 / Flujo principal)
+            UO -> UI : Pulsa "Confirmar importación de filas válidas"
+            activate UI
+            UI -> API : POST /api/clientes/csv-import (filasValidas)
+            activate API
+            API -> Worker : ejecutarImportacionMasiva(filasValidas, usuarioId)
+            activate Worker
+
+            loop Para cada fila válida
+                create Cli
+                Worker -> Cli : <<create>>(nif, razonSocial, pais, moneda, impuestoRate)
+                Worker -> DB : insertarCliente(cli)
+                activate DB
+                DB --> Worker : ok
+                deactivate DB
+            end
+
+            Worker -> Eventos : publicarEvento("IMPORTACION_CSV_COMPLETADA", resumen)
+            activate Eventos
+            Eventos -> AudObs : actualizar("IMPORTACION_CSV_COMPLETADA", resumen)
+            activate AudObs
+            note right of AudObs: Registra operación con creados,\nrechazados y motivos (FR-030)
+            AudObs --> Eventos : trazaAuditoriaGuardada
+            deactivate AudObs
+            Eventos --> Worker : void
+            deactivate Eventos
+
+            Worker --> API : resumenFinal
+            deactivate Worker
+            API --> UI : 200 OK (Resumen de importación)
+            deactivate API
+            UI --> UO : Muestra confirmación y actualiza directorio
+            deactivate UI
+        end
+    end
+@enduml

@@ -1,0 +1,121 @@
+@startuml DS01_Emision_Envio_Factura
+autonumber
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+
+title DS-01: Emisión, Renderizado PDF y Envío de Factura (UC-12 / UC-13)
+
+actor "Usuario Operativo" as UO
+participant "UI : Frontend SPA" as UI
+participant "API : ControladorFacturas" as API
+participant "facade : FacturacionFacade" as Facade
+participant "cliente : Cliente" as Cli
+participant "factura : Factura" as Fac
+participant "estado : EstadoBorrador" as EstBorrador
+participant "pdf : FacturaPDFBase" as PDF
+participant "storage : StorageSeguro" as Storage
+participant "plantilla : PlantillaComunicacion" as Plantilla
+participant "emailAdapter : EmailSimuladoAdapter" as Email
+participant "eventos : GestorEventosDominio" as Eventos
+participant "auditoriaObs : AuditoriaObserver" as AudObs
+participant "notifObs : NotificacionObserver" as NotifObs
+
+UO -> UI : Solicita emitir y enviar factura
+activate UI
+
+UI -> API : POST /api/facturas/{facturaId}/emitir
+activate API
+
+API -> Facade : emitirYEnviarFactura(facturaId)
+activate Facade
+
+Facade -> Cli : validarDatosFiscales()
+activate Cli
+Cli --> Facade : esValido : Boolean
+deactivate Cli
+
+alt Datos fiscales incompletos (!esValido)
+    Facade --> API : Lanza ExcepcionDatosFiscales(camposFaltantes)
+    deactivate Facade
+    API --> UI : 400 Bad Request (Detalle de campos faltantes)
+    deactivate API
+    UI --> UO : Muestra aviso de validación fiscal
+    deactivate UI
+else Datos fiscales válidos (esValido == true)
+    Facade -> Fac : emitir()
+    activate Fac
+    Fac -> EstBorrador : emitir(factura)
+    activate EstBorrador
+    EstBorrador -> Fac : Asigna serie/número único, emitida = true\ny transiciona a EstadoPendiente
+    EstBorrador --> Fac : ok
+    deactivate EstBorrador
+    Fac --> Facade : facturaEmitida
+    deactivate Fac
+
+    Facade -> Facade : exportarFacturaPDF(facturaId, false)
+    Facade -> PDF : generarBytes()
+    activate PDF
+    PDF --> Facade : pdfBytes : byte[]
+    deactivate PDF
+
+    Facade -> Storage : guardarDocumento(factura.numero, pdfBytes)
+    activate Storage
+    Storage --> Facade : rutaStorage
+    deactivate Storage
+
+    Facade -> Plantilla : renderizar(variablesFactura)
+    activate Plantilla
+    Plantilla --> Facade : cuerpoMensaje : String
+    deactivate Plantilla
+
+    Facade -> Email : enviar(cliente.email, asunto, cuerpoMensaje, pdfBytes)
+    activate Email
+    Email --> Facade : entregado : Boolean
+    deactivate Email
+
+    alt Entrega exitosa (entregado == true)
+        Facade -> Eventos : publicarEvento("FACTURA_EMITIDA", payload)
+        activate Eventos
+        Eventos -> AudObs : actualizar("FACTURA_EMITIDA", payload)
+        activate AudObs
+        AudObs --> Eventos : trazaAuditoriaRegistrada
+        deactivate AudObs
+        Eventos --> Facade : void
+        deactivate Eventos
+
+        Facade --> API : void
+        deactivate Facade
+        API --> UI : 200 OK (Factura emitida y enviada)
+        deactivate API
+        UI --> UO : Confirma emisión y envío al cliente
+        deactivate UI
+    else Rebote o fallo de entrega (entregado == false)
+        opt Cliente dispone de contacto de facturación suplente
+            Facade -> Email : enviar(cliente.emailSuplente, asunto, cuerpoMensaje, pdfBytes)
+            activate Email
+            Email --> Facade : reintentoExitoso : Boolean
+            deactivate Email
+        end
+
+        Facade -> Eventos : publicarEvento("FALLO_ENTREGA_FACTURA", payload)
+        activate Eventos
+        Eventos -> AudObs : actualizar("FALLO_ENTREGA_FACTURA", payload)
+        activate AudObs
+        AudObs --> Eventos : trazaReintentoRegistrada
+        deactivate AudObs
+        Eventos -> NotifObs : actualizar("FALLO_ENTREGA_FACTURA", payload)
+        activate NotifObs
+        NotifObs --> Eventos : incidenciaYAlertaCreadas
+        deactivate NotifObs
+        Eventos --> Facade : void
+        deactivate Eventos
+
+        Facade --> API : void (Emitida con incidencia de entrega)
+        deactivate Facade
+        API --> UI : 202 Accepted (Alerta de rebote generada)
+        deactivate API
+        UI --> UO : Notifica fallo de entrega para revisar contacto
+        deactivate UI
+    end
+end
+@enduml

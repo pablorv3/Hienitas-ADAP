@@ -1,0 +1,76 @@
+@startuml DS04_Control_Vencimientos_Impagos
+    autonumber
+    skinparam sequenceMessageAlign center
+    skinparam responseMessageBelowArrow true
+
+    title DS-04: Control de Vencimientos y Recordatorios de Impago (UC-18)
+
+    participant "cron : PlanificadorCron" as Cron
+    participant "worker : WorkerImpagos" as Worker
+    participant "config : Configuracion" as Config
+    participant "db : BaseDatosRelacional" as DB
+    participant "factura : Factura" as Fac
+    participant "estado : EstadoPendiente" as EstPend
+    participant "plantilla : PlantillaComunicacion" as Plantilla
+    participant "email : EmailSimuladoAdapter" as Email
+    participant "wa : WhatsAppSimuladoAdapter" as WA
+    participant "eventos : GestorEventosDominio" as Eventos
+
+    Cron -> Worker : Disparar revisión diaria de vencimientos
+    activate Worker
+
+    Worker -> Config : obtenerParametrosRecordatorios()
+    activate Config
+    Config --> Worker : diasAviso1 (3), diasAviso2 (5), cadenciaImpago (2)
+    deactivate Config
+
+    Worker -> DB : buscarFacturasPendientesVencimientoOImpagadas()
+    activate DB
+    DB --> Worker : listaFacturas : List<Factura>
+    deactivate DB
+
+    loop Para cada factura en listaFacturas
+        alt Recordatorios suspendidos temporalmente (FR-075 / incidencia activa FR-077)
+            Worker -> Worker : omitirAvisoFactura(factura.id)
+        else Recordatorios activos
+            note over Worker, Fac: Prevalece el plazo pactado del cliente (ej. 30 días) sobre el general (RB-01)
+
+            alt Fecha actual > factura.fechaVencimiento (Factura vencida)
+                Worker -> Fac : marcarComoImpagada()
+                activate Fac
+                Fac -> EstPend : transicionarAImpagada(factura)
+                activate EstPend
+                EstPend -> Fac : estadoCobro = "IMPAGADA", estadoActual = EstadoImpagada
+                EstPend --> Fac : ok
+                deactivate EstPend
+                Fac --> Worker : ok
+                deactivate Fac
+            end
+
+            Worker -> Plantilla : renderizar(variablesRecordatorio)
+            activate Plantilla
+            Plantilla --> Worker : textoAviso : String
+            deactivate Plantilla
+
+            Worker -> Email : enviar(cliente.email, asunto, textoAviso, null)
+            activate Email
+            Email --> Worker : enviadoEmail : Boolean
+            deactivate Email
+
+            opt Cliente admite WhatsApp con consentimiento (FR-062)
+                Worker -> WA : enviar(cliente.telefono, asunto, textoAviso, null)
+                activate WA
+                WA --> Worker : enviadoWA : Boolean
+                deactivate WA
+            end
+
+            Worker -> Eventos : publicarEvento("RECORDATORIO_PAGO_ENVIADO", payload)
+            activate Eventos
+            Eventos --> Worker : void
+            deactivate Eventos
+        end
+    end
+
+    Worker --> Cron : Barrido diario de avisos finalizado
+    deactivate Worker
+@enduml

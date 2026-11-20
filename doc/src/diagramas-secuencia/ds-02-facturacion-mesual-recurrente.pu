@@ -1,0 +1,81 @@
+@startuml DS02_Facturacion_Mensual_Recurrente
+    autonumber
+    skinparam sequenceMessageAlign center
+    skinparam responseMessageBelowArrow true
+
+    title DS-02: Facturación Mensual Recurrente - Proceso Batch (UC-14)
+
+    participant "cron : PlanificadorCron" as Cron
+    participant "worker : WorkerFacturacion" as Worker
+    participant "facade : FacturacionFacade" as Facade
+    participant "db : BaseDatosRelacional" as DB
+    participant "suscripcion : Suscripcion" as Sub
+    participant "estrategia : IEstrategiaCalculoTarifa" as Strat
+    participant "factory : FacturaRecurrenteFactory" as Factory
+    participant "factura : Factura" as Fac
+    participant "eventos : GestorEventosDominio" as Eventos
+
+    Cron -> Worker : Disparar tarea programada (Día 1, 00:00)
+    activate Worker
+
+    Worker -> Facade : generarFacturacionMensual(fechaActual)
+    activate Facade
+
+    Facade -> DB : obtenerSuscripcionesActivasNoFacturadas(periodo)
+    activate DB
+    DB --> Facade : listaSuscripciones : List<Suscripcion>
+    deactivate DB
+
+    loop Para cada suscripcion en listaSuscripciones
+        alt Suscripción pausada (RB-05) o cliente dado de baja (RB-09)
+            Facade -> Facade : omitirSuscripcion(suscripcion.id)
+        else Suscripción activa
+            Facade -> Sub : calcularImportePeriodo(fechaActual)
+            activate Sub
+            Sub -> Strat : calcular(suscripcion, fechaActual)
+            activate Strat
+            note right of Strat: Aplica CalculoEstandarStrategy\no CalculoProrrateoAltaStrategy (RB-02)
+            Strat --> Sub : importeCalculado : Decimal
+            deactivate Strat
+            Sub --> Facade : importeCalculado
+            deactivate Sub
+
+            Facade -> Factory : crearFactura(suscripcion.cliente)
+            activate Factory
+            create Fac
+            Factory -> Fac : <<create>>(tipo="RECURRENTE")
+            activate Fac
+            Fac -> Fac : agregarLinea(lineaPeriodo)
+            Fac -> Fac : recalcularTotales()
+            Fac --> Factory : facturaBorrador
+            deactivate Fac
+            Factory --> Facade : facturaBorrador
+            deactivate Factory
+
+            alt Excepción comercial sin aprobar (UC-16 / RB-11)
+                Facade -> DB : guardarBorradorPendienteAprobacion(facturaBorrador)
+                activate DB
+                DB --> Facade : ok
+                deactivate DB
+
+                Facade -> Eventos : publicarEvento("APROBACION_REQUERIDA", payload)
+                activate Eventos
+                Eventos --> Facade : void
+                deactivate Eventos
+            else Sin excepciones pendientes
+                ref over Facade, Fac, Eventos : DS-01: Emisión, Renderizado PDF y Envío de Factura (UC-12 / UC-13)
+            end
+        end
+    end
+
+    Facade -> DB : registrarResumenEjecucionBatch(resumenEjecucion)
+    activate DB
+    DB --> Facade : ok
+    deactivate DB
+
+    Facade --> Worker : resumen : ResumenEjecucion
+    deactivate Facade
+
+    Worker --> Cron : Ejecución mensual finalizada
+    deactivate Worker
+@enduml
