@@ -3,7 +3,7 @@
 - **Proyecto:** Sistema Interno de Gestión de Facturación y Cobros (**Turbine**)
 - **Entrega:** Entrega 2 — Diseño del Sistema
 - **Artefacto:** Modelado Dinámico — Diagramas de Secuencia UML (`DS-01` a `DS-08`)
-- **Notación:** UML 2.x (especificación fuente en PlantUML: `doc/src/diagramas-secuencia.pu`)
+- **Notación:** UML 2.x (especificación fuente en PlantUML: `doc/src/diagramas-secuencia/*.pu`)
 - **Estado:** Validado y trazado con Requisitos, Casos de Uso, ERD, Clases y Arquitectura
 
 ---
