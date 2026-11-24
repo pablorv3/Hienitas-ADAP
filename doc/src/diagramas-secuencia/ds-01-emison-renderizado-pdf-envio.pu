@@ -12,6 +12,7 @@ participant "facade : FacturacionFacade" as Facade
 participant "cliente : Cliente" as Cli
 participant "factura : Factura" as Fac
 participant "estado : EstadoBorrador" as EstBorrador
+participant "serie : SerieFacturacion" as Serie
 participant "pdf : FacturaPDFBase" as PDF
 participant "storage : StorageSeguro" as Storage
 participant "plantilla : PlantillaComunicacion" as Plantilla
@@ -42,80 +43,115 @@ alt Datos fiscales incompletos (!esValido)
     UI --> UO : Muestra aviso de validación fiscal
     deactivate UI
 else Datos fiscales válidos (esValido == true)
-    Facade -> Fac : emitir()
-    activate Fac
-    Fac -> EstBorrador : emitir(factura)
-    activate EstBorrador
-    EstBorrador -> Fac : Asigna serie/número único, emitida = true\ny transiciona a EstadoPendiente
-    EstBorrador --> Fac : ok
-    deactivate EstBorrador
-    Fac --> Facade : facturaEmitida
-    deactivate Fac
-
-    Facade -> Facade : exportarFacturaPDF(facturaId, false)
-    Facade -> PDF : generarBytes()
-    activate PDF
-    PDF --> Facade : pdfBytes : byte[]
-    deactivate PDF
-
-    Facade -> Storage : guardarDocumento(factura.numero, pdfBytes)
-    activate Storage
-    Storage --> Facade : rutaStorage
-    deactivate Storage
-
-    Facade -> Plantilla : renderizar(variablesFactura)
-    activate Plantilla
-    Plantilla --> Facade : cuerpoMensaje : String
-    deactivate Plantilla
-
-    Facade -> Email : enviar(cliente.email, asunto, cuerpoMensaje, pdfBytes)
-    activate Email
-    Email --> Facade : entregado : Boolean
-    deactivate Email
-
-    alt Entrega exitosa (entregado == true)
-        Facade -> Eventos : publicarEvento("FACTURA_EMITIDA", payload)
-        activate Eventos
-        Eventos -> AudObs : actualizar("FACTURA_EMITIDA", payload)
-        activate AudObs
-        AudObs --> Eventos : trazaAuditoriaRegistrada
-        deactivate AudObs
-        Eventos --> Facade : void
-        deactivate Eventos
-
-        Facade --> API : void
+    alt La factura incluye excepciones (UC-12 A1)
+        Facade -> Fac : solicitarAprobacion(motivo)
+        activate Fac
+        Fac -> EstBorrador : solicitarAprobacion(factura, motivo)
+        activate EstBorrador
+        EstBorrador -> Fac : estadoActual = EstadoPendienteAprobacion
+        EstBorrador --> Fac : ok
+        deactivate EstBorrador
+        Fac --> Facade : pendienteAprobacion
+        deactivate Fac
+        ref over Facade, Fac, Eventos : DS-05: Aprobación de Excepciones y Rectificación Fiscal (UC-16)
+        Facade --> API : void (Pendiente de aprobación)
         deactivate Facade
-        API --> UI : 200 OK (Factura emitida y enviada)
+        API --> UI : 202 Accepted (Factura pendiente de aprobación)
         deactivate API
-        UI --> UO : Confirma emisión y envío al cliente
+        UI --> UO : Informa de que la emisión espera aprobación
         deactivate UI
-    else Rebote o fallo de entrega (entregado == false)
-        opt Cliente dispone de contacto de facturación suplente
-            Facade -> Email : enviar(cliente.emailSuplente, asunto, cuerpoMensaje, pdfBytes)
-            activate Email
-            Email --> Facade : reintentoExitoso : Boolean
-            deactivate Email
+    else Sin excepciones pendientes
+        Facade -> Fac : emitir()
+        activate Fac
+        Fac -> EstBorrador : emitir(factura)
+        activate EstBorrador
+        EstBorrador -> Serie : asignarSiguienteNumero()
+        activate Serie
+        Serie --> EstBorrador : numero : String
+        deactivate Serie
+        EstBorrador -> Fac : Asigna serie/número y fechaEmision\ny transiciona a EstadoEmitida
+        EstBorrador --> Fac : ok
+        deactivate EstBorrador
+        Fac --> Facade : facturaEmitida
+        deactivate Fac
+
+        Facade -> Facade : exportarFacturaPDF(facturaId, false)
+        Facade -> PDF : generarBytes()
+        activate PDF
+        PDF --> Facade : pdfBytes : byte[]
+        deactivate PDF
+
+        Facade -> Storage : guardarDocumento(factura.numero, pdfBytes)
+        activate Storage
+        Storage --> Facade : rutaStorage
+        deactivate Storage
+
+        Facade -> Plantilla : renderizar(variablesFactura)
+        activate Plantilla
+        Plantilla --> Facade : cuerpoMensaje : String
+        deactivate Plantilla
+
+        Facade -> Cli : contactosFacturacion()
+        activate Cli
+        Cli --> Facade : contactos : List<Contacto>
+        deactivate Cli
+
+        Facade -> Email : enviar(contacto.email, asunto, cuerpoMensaje, pdfBytes)
+        activate Email
+        Email --> Facade : entregado : Boolean
+        deactivate Email
+
+        alt Entrega exitosa (entregado == true)
+            Facade -> Facade : registrarEnvio(factura, contacto, estado = ENVIADO)
+            Facade -> Eventos : publicarEvento("FACTURA_EMITIDA", payload)
+            activate Eventos
+            Eventos -> AudObs : actualizar("FACTURA_EMITIDA", payload)
+            activate AudObs
+            AudObs --> Eventos : trazaAuditoriaRegistrada
+            deactivate AudObs
+            Eventos --> Facade : void
+            deactivate Eventos
+
+            Facade --> API : void
+            deactivate Facade
+            API --> UI : 200 OK (Factura emitida y enviada)
+            deactivate API
+            UI --> UO : Confirma emisión y envío al cliente
+            deactivate UI
+        else Rebote o fallo de entrega (entregado == false)
+            Facade -> Facade : registrarEnvio(factura, contacto, estado = REBOTADO)
+            loop Para cada otro contacto de facturación activo, por prioridad
+                Facade -> Email : enviar(contacto.email, asunto, cuerpoMensaje, pdfBytes)
+                activate Email
+                Email --> Facade : entregado : Boolean
+                deactivate Email
+                Facade -> Facade : registrarEnvio(factura, contacto, tipo = REINTENTO)
+                break entregado == true
+                end
+            end
+
+            opt Ningún contacto entregó (entregado == false)
+                Facade -> Eventos : publicarEvento("FALLO_ENTREGA_FACTURA", payload)
+                activate Eventos
+                Eventos -> AudObs : actualizar("FALLO_ENTREGA_FACTURA", payload)
+                activate AudObs
+                AudObs --> Eventos : trazaReintentoRegistrada
+                deactivate AudObs
+                Eventos -> NotifObs : actualizar("FALLO_ENTREGA_FACTURA", payload)
+                activate NotifObs
+                NotifObs --> Eventos : incidenciaYAlertaCreadas
+                deactivate NotifObs
+                Eventos --> Facade : void
+                deactivate Eventos
+            end
+
+            Facade --> API : void (Emitida; resultado de entrega registrado)
+            deactivate Facade
+            API --> UI : 202 Accepted (Resultado de entrega registrado)
+            deactivate API
+            UI --> UO : Muestra el resultado de la entrega y, si falló, la alerta para revisar contactos
+            deactivate UI
         end
-
-        Facade -> Eventos : publicarEvento("FALLO_ENTREGA_FACTURA", payload)
-        activate Eventos
-        Eventos -> AudObs : actualizar("FALLO_ENTREGA_FACTURA", payload)
-        activate AudObs
-        AudObs --> Eventos : trazaReintentoRegistrada
-        deactivate AudObs
-        Eventos -> NotifObs : actualizar("FALLO_ENTREGA_FACTURA", payload)
-        activate NotifObs
-        NotifObs --> Eventos : incidenciaYAlertaCreadas
-        deactivate NotifObs
-        Eventos --> Facade : void
-        deactivate Eventos
-
-        Facade --> API : void (Emitida con incidencia de entrega)
-        deactivate Facade
-        API --> UI : 202 Accepted (Alerta de rebote generada)
-        deactivate API
-        UI --> UO : Notifica fallo de entrega para revisar contacto
-        deactivate UI
     end
 end
 @enduml

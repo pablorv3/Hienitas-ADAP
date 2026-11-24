@@ -60,7 +60,7 @@
 
             loop Para cada fila válida
                 create Cli
-                Worker -> Cli : <<create>>(nif, razonSocial, pais, moneda, impuestoRate)
+                Worker -> Cli : <<create>>(nif, razonSocial, domicilioFiscal, pais, moneda, impuestoRate)
                 Worker -> DB : insertarCliente(cli)
                 activate DB
                 DB --> Worker : ok

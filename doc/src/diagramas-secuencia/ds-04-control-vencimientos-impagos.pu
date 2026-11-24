@@ -10,7 +10,6 @@
     participant "config : Configuracion" as Config
     participant "db : BaseDatosRelacional" as DB
     participant "factura : Factura" as Fac
-    participant "estado : EstadoPendiente" as EstPend
     participant "plantilla : PlantillaComunicacion" as Plantilla
     participant "email : EmailSimuladoAdapter" as Email
     participant "wa : WhatsAppSimuladoAdapter" as WA
@@ -24,7 +23,7 @@
     Config --> Worker : diasAviso1 (3), diasAviso2 (5), cadenciaImpago (2)
     deactivate Config
 
-    Worker -> DB : buscarFacturasPendientesVencimientoOImpagadas()
+    Worker -> DB : buscarFacturasEmitidasConSaldoPendiente()
     activate DB
     DB --> Worker : listaFacturas : List<Factura>
     deactivate DB
@@ -35,16 +34,16 @@
         else Recordatorios activos
             note over Worker, Fac: Prevalece el plazo pactado del cliente (ej. 30 días) sobre el general (RB-01)
 
-            alt Fecha actual > factura.fechaVencimiento (Factura vencida)
-                Worker -> Fac : marcarComoImpagada()
-                activate Fac
-                Fac -> EstPend : transicionarAImpagada(factura)
-                activate EstPend
-                EstPend -> Fac : estadoCobro = "IMPAGADA", estadoActual = EstadoImpagada
-                EstPend --> Fac : ok
-                deactivate EstPend
-                Fac --> Worker : ok
-                deactivate Fac
+            Worker -> Fac : estadoCobro()
+            activate Fac
+            Fac --> Worker : estado : EstadoCobro (PENDIENTE / VENCIDA)
+            deactivate Fac
+            note right of Fac: Estado derivado de cobros, total y fechaVencimiento:\nno se persiste ninguna transición a "impagada" (A-14)
+
+            alt estado == VENCIDA (fecha actual > factura.fechaVencimiento)
+                Worker -> Worker : seleccionarPlantilla("IMPAGO")
+            else estado == PENDIENTE (aviso previo, día 3 - FR-071)
+                Worker -> Worker : seleccionarPlantilla("RECORDATORIO_PREVIO")
             end
 
             Worker -> Plantilla : renderizar(variablesRecordatorio)
@@ -52,13 +51,13 @@
             Plantilla --> Worker : textoAviso : String
             deactivate Plantilla
 
-            Worker -> Email : enviar(cliente.email, asunto, textoAviso, null)
+            Worker -> Email : enviar(contactoFacturacion.email, asunto, textoAviso, null)
             activate Email
             Email --> Worker : enviadoEmail : Boolean
             deactivate Email
 
-            opt Cliente admite WhatsApp con consentimiento (FR-062)
-                Worker -> WA : enviar(cliente.telefono, asunto, textoAviso, null)
+            opt Contacto admite WhatsApp con consentimiento (FR-023 / FR-062)
+                Worker -> WA : enviar(contactoFacturacion.telefono, asunto, textoAviso, null)
                 activate WA
                 WA --> Worker : enviadoWA : Boolean
                 deactivate WA

@@ -12,7 +12,6 @@
     participant "db : BaseDatosRelacional" as DB
     participant "cobro : Cobro" as Cobro
     participant "factura : Factura" as Fac
-    participant "estado : EstadoPendiente" as EstPend
     participant "eventos : GestorEventosDominio" as Eventos
 
     Cron -> Worker : Disparar sincronización periódica de cobros
@@ -27,6 +26,14 @@
     deactivate Stripe
 
     loop Para cada movimiento en cobrosConfirmados
+        Facade -> DB : existeCobro(fuente, movimiento.eventoExternoId)
+        activate DB
+        DB --> Facade : yaRegistrado : Boolean
+        deactivate DB
+
+        alt Evento ya registrado (FR-067.1)
+            Facade -> Facade : omitirMovimiento(movimiento)
+        else Evento nuevo
         Facade -> Stripe : consultarEstadoPago(movimiento.referenciaExterna)
         activate Stripe
         Stripe --> Facade : estadoExterno ("PAID")
@@ -37,8 +44,11 @@
         DB --> Facade : factura : Factura
         deactivate DB
 
-        alt Factura no identificada (sin referencia válida)
-            Facade -> DB : registrarCobroPendienteAsignacion(movimiento)
+        create Cobro
+        Facade -> Cobro : <<create>>(fuente, eventoExternoId, referenciaExterna, fechaPago, importe, moneda)
+
+        alt Factura no identificada o dudosa (FR-067.2)
+            Facade -> DB : guardarCobro(cobro, facturaId = null, estadoConciliacion = "PENDIENTE")
             activate DB
             DB --> Facade : ok
             deactivate DB
@@ -48,36 +58,40 @@
             Eventos --> Facade : void
             deactivate Eventos
         else Factura localizada
-            create Cobro
-            Facade -> Cobro : <<create>>(referenciaExterna, fechaPago, importe)
+            Facade -> Fac : saldoPendiente()
+            activate Fac
+            Fac --> Facade : saldo : Decimal
+            deactivate Fac
 
-            alt Importe exacto (movimiento.importe == factura.total)
+            alt Importe exacto (movimiento.importe == saldo)
                 Facade -> Fac : registrarCobro(cobro)
                 activate Fac
-                Fac -> EstPend : registrarCobro(factura, cobro)
-                activate EstPend
-                EstPend -> Fac : estadoCobro = "PAGADA", estadoActual = EstadoPagada
-                EstPend --> Fac : ok
-                deactivate EstPend
+                Fac -> Fac : estadoCobro() = PAGADA (derivado; el documento sigue en EstadoEmitida)
                 Fac --> Facade : ok
                 deactivate Fac
 
-                Facade -> Eventos : publicarEvento("FACTURA_PAGADA", payload)
+                Facade -> DB : guardarCobro(cobro, factura.id, estadoConciliacion = "AUTOMATICA")
+                activate DB
+                DB --> Facade : ok
+                deactivate DB
+
+                Facade -> Eventos : publicarEvento("COBRO_CONCILIADO", payload)
                 activate Eventos
                 Eventos --> Facade : void
                 deactivate Eventos
             else Discrepancia de importe (pago parcial o sobrepago - RB-10)
-                Facade -> Fac : registrarCobroConDiscrepancia(cobro)
-                activate Fac
-                Fac --> Facade : diferenciaDetectada : Decimal
-                deactivate Fac
+                Facade -> DB : guardarCobro(cobro, factura.id, estadoConciliacion = "PENDIENTE")
+                activate DB
+                DB --> Facade : ok
+                deactivate DB
 
                 Facade -> Eventos : publicarEvento("DISCREPANCIA_IMPORTE_COBRO", payload)
                 activate Eventos
-                note right of Eventos: NotificacionObserver genera alerta\ncon requiereAccion = true (FR-068)
+                note right of Eventos: NotificacionObserver genera alerta\ncon requiereAccion = true (FR-068).\nLa factura no pasa a pagada.
                 Eventos --> Facade : void
                 deactivate Eventos
             end
+        end
         end
     end
 
