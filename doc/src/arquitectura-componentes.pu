@@ -1,6 +1,6 @@
 @startuml arquitectura-componentes
     skinparam componentStyle uml2
-    title Diagrama de Arquitectura y Componentes - TurbineH
+    title Diagrama de Arquitectura y Componentes - Turbine
 
     package "Capa Cliente (Navegador/Móvil)" {
         [Frontend SPA (Interfaz Web)] as UI

@@ -3,7 +3,7 @@
 **Proyecto:** Sistema interno de facturación y cobros de Turbine
 **Asignatura:** Análisis y Diseño de Aplicaciones (curso 2026-27), Entrega 2
 **Artefacto de la guía operativa:** apartado 7.6, «Diagrama de arquitectura o componentes».
-**Diagrama fuente:** `doc/src/arquitectura/componentes.pu` (exportado a `doc/arquitectura-componentes-diagrama.pdf`).
+**Diagrama fuente:** `doc/src/arquitectura-componentes.pu` (exportado a `doc/arquitectura-componentes-diagrama.pdf`).
 **Parte de:** `requisitos.md` (BR, FR, NFR, RB, A, Q) y `casos-uso-especificación.md` (UC-01 a UC-30).
 **Estado:** propuesta para revisión del equipo. El tipo de diagrama, el nivel de detalle y la notación definitivos dependen de las indicaciones del profesorado (guía, 7.6).
 
@@ -107,7 +107,7 @@ El sistema es un **monolito modular en cinco bloques**: cliente, negocio, proces
   - **Notificaciones internas:** bandeja con estado, preferencias (aplicación, correo o resumen diario), alertas configurables y menciones. Distingue «leída» de «resuelta».
 - **Casos de uso:** UC-05, UC-13, UC-18 (envíos), UC-22.
 - **Requisitos:** FR-061 a FR-065, FR-071 a FR-075, FR-081 a FR-085, FR-106 a FR-108, FR-111, NFR-10, NFR-22.
-- **Decisiones de diseño:** el mensaje se escribe en la base de datos **dentro de la misma transacción** que el hecho de negocio (patrón outbox) y se envía después. Así un fallo de correo no deshace una factura emitida y un reintento reutiliza la misma factura sin duplicarla (AD-04).
+- **Decisiones de diseño:** el mensaje (tabla `ENVIO`) se escribe en la base de datos **dentro de la misma transacción** que el hecho de negocio (patrón outbox) y se envía después. Así un fallo de correo no deshace una factura emitida y un reintento reutiliza la misma factura sin duplicarla (AD-04).
 
 ### 4.3. Procesos en Segundo Plano
 
@@ -126,7 +126,7 @@ El sistema es un **monolito modular en cinco bloques**: cliente, negocio, proces
 - **Decisiones de diseño:**
   - Cada elemento (por ejemplo, cada cliente) se procesa en su propia transacción. Si uno falla, las otras 999 se completan y el fallo queda registrado y notificado.
   - Cada ejecución guarda cuántos elementos procesó, cuántos creó y cuántos fallaron, con el motivo.
-  - La cola vive en la base de datos y un trabajo se toma con bloqueo por fila, de modo que dos workers no cogen el mismo.
+  - La cola vive en la base de datos (tabla `EJECUCION_PROCESO`, con clave única por trabajo) y un trabajo se toma con bloqueo por fila, de modo que dos workers no cogen el mismo.
 
 ### 4.4. Capa de Datos e Infraestructura
 
@@ -163,7 +163,7 @@ El sistema es un **monolito modular en cinco bloques**: cliente, negocio, proces
 - **Responsabilidad:** enviar correo y WhatsApp (simulados) y devolver el resultado (aceptado, entregado, fallido, rebotado).
 - **Casos de uso:** UC-13, UC-18.
 - **Requisitos:** FR-061 a FR-065, NFR-27.
-- **Decisiones de diseño:** no se inventa el estado «leído» si el proveedor no lo da. WhatsApp solo se usa si el contacto tiene consentimiento registrado (FR-023).
+- **Decisiones de diseño:** no se inventa el estado «leído» si el proveedor no lo da. WhatsApp solo se usa si el contacto tiene consentimiento registrado (`CONTACTO.admiteWhatsApp`, FR-023).
 
 ## 5. Relaciones del diagrama
 
@@ -227,7 +227,7 @@ Notas sobre las relaciones:
 
 ### 7.3. Autorización (`API`, `Logic`, `ORM`)
 
-- Tres roles (superadministrador ⊇ administrador ⊇ operativo) con **permisos definidos como datos**, no como código. Si se aclara quién configura las series (véase 10.1), basta con cambiar la matriz.
+- Tres roles (superadministrador ⊇ administrador ⊇ operativo) con **permisos definidos como datos**, no como código. Las series las configura el superadministrador (Q-06 resuelta, FR-052); si cambia, basta con cambiar la matriz.
 - **Ámbito:** un operativo ve los clientes asignados, y los delegados durante el intervalo vigente. El filtro se aplica en las consultas de todo módulo: listados, búsqueda, informes, exportación, descargas y API.
 - Las reglas de separación de funciones (no aprobar lo propio) son políticas, no pantallas.
 - Los accesos por URL directa se comprueban siempre en el servidor. «Recientes» y «favoritos» son comodidades, no autorización.
@@ -327,8 +327,8 @@ Generada a partir de la línea «Requisitos» de cada caso de uso en `casos-uso-
 | FR-011 | Permitir al usuario operativo seguir los cobros de sus clientes asignados                                  | UC-17, UC-23 (\*)          | Logic (Cobros y conciliación, Informes, dashboard y trabajo diario); StripeAdapter                                   |
 | FR-012 | Permitir al usuario operativo descargar los documentos de sus clientes asignados                           | UC-21                      | Logic (Incidencias, comentarios y adjuntos, Documentos); Storage                                                     |
 | FR-013 | No debe permitir al usuario operativo darse a sí mismo acceso a otro cliente, cambiar tarifas globales, c… | UC-02, UC-03               | Logic (Identidad y acceso, Clientes y contactos)                                                                     |
-| FR-014 | Permitir al administrador asignar y desasignar clientes a los usuarios                                     | UC-03                      | Logic (Identidad y acceso, Clientes y contactos)                                                                     |
-| FR-015 | Cuando cambie la asignación de un cliente, el sistema deberá transferir las tareas pendientes al nuevo re… | UC-03                      | Logic (Identidad y acceso, Clientes y contactos)                                                                     |
+| FR-014 | Permitir al administrador asignar y reasignar los usuarios operativos de cada cliente (titular y suplente) | UC-03                      | Logic (Identidad y acceso, Clientes y contactos)                                                                     |
+| FR-015 | Si el titular falla, se ausenta o cambia de asignación, habilitar al suplente y transferirle las tareas    | UC-03                      | Logic (Identidad y acceso, Clientes y contactos)                                                                     |
 | FR-016 | Cuando cambie la asignación de un cliente, el histórico deberá seguir indicando quién realizó cada acción… | UC-03, UC-28               | Logic (Identidad y acceso, Clientes y contactos, Auditoría y observabilidad)                                         |
 | FR-017 | Permitir registrar los datos de un cliente necesarios para la facturación (nombre, NIF, correo, teléfono,… | UC-06                      | Logic (Clientes y contactos)                                                                                         |
 | FR-018 | Al crear un cliente, el sistema deberá comprobar que su creación es posible para evitar duplicados y conf… | UC-06                      | Logic (Clientes y contactos)                                                                                         |
@@ -339,12 +339,12 @@ Generada a partir de la línea «Requisitos» de cada caso de uso en `casos-uso-
 | FR-023 | Registrar, por cada cliente, los canales de comunicación permitidos                                        | UC-06, UC-13               | Logic (Clientes y contactos); NotifManager; MsgAdapter                                                               |
 | FR-024 | Representar el estado de cada cliente en relación con la facturación                                       | UC-06                      | Logic (Clientes y contactos)                                                                                         |
 | FR-025 | Mantener un historial de eventos relevantes asociados y relacionados con cada cliente                      | UC-06, UC-28               | Logic (Clientes y contactos, Auditoría y observabilidad)                                                             |
-| FR-026 | Asociar a cada cliente un responsable interno encargado de su facturación (véase A-04)                     | UC-06                      | Logic (Clientes y contactos)                                                                                         |
+| FR-026 | Asociar a cada cliente dos usuarios operativos obligatorios: titular y suplente (véase A-04)               | UC-06                      | Logic (Clientes y contactos)                                                                                         |
 | FR-027 | Permitir importar clientes desde un fichero CSV, mostrando una previsualización antes de que el usuario c… | UC-07                      | Logic (Clientes y contactos); Workers                                                                                |
 | FR-028 | Permitir al usuario mapear las columnas del fichero CSV                                                    | UC-07                      | Logic (Clientes y contactos); Workers                                                                                |
 | FR-029 | Mostrar al usuario los errores detectados en el fichero CSV y permitirle decidir si corrige el fichero o … | UC-07                      | Logic (Clientes y contactos); Workers                                                                                |
 | FR-030 | Registrar la importación completa como una operación, con un resumen de clientes creados, actualizados, r… | UC-07                      | Logic (Clientes y contactos); Workers                                                                                |
-| FR-031 | Permitir configurar el rango de cobro del cliente (de anual a mensual, de mensual a anual, etc.; véase Q-… | UC-08                      | Logic (Suscripciones y tarifas)                                                                                      |
+| FR-031 | Asignar a cada cliente el rango de tarifa según su facturación anual; la facturación es siempre mensual    | UC-08                      | Logic (Suscripciones y tarifas)                                                                                      |
 | FR-032 | Avisar de la revisión necesaria cuando se produzca un cambio de rango                                      | UC-09                      | Logic (Suscripciones y tarifas)                                                                                      |
 | FR-033 | Permitir registrar excepciones al precio, como descuentos, modalidades gratuitas o precio pactado          | UC-08                      | Logic (Suscripciones y tarifas)                                                                                      |
 | FR-034 | Cuando el responsable apruebe el cambio de rango, el sistema deberá registrar quién lo aprobó, cuándo y c… | UC-09                      | Logic (Suscripciones y tarifas)                                                                                      |
@@ -365,7 +365,7 @@ Generada a partir de la línea «Requisitos» de cada caso de uso en `casos-uso-
 | FR-049 | Cuando una factura no pueda modificarse, el sistema deberá permitir realizar una factura rectificativa (n… | UC-15                      | Logic (Facturación)                                                                                                  |
 | FR-050 | La generación de un documento rectificativo requerirá permiso administrativo y aprobación dependiendo del… | UC-15, UC-16               | Logic (Facturación, Aprobaciones)                                                                                    |
 | FR-051 | Asignar a cada factura un identificador único compuesto por número y serie, una vez que ésta se ha emitid… | UC-12                      | Logic (Facturación, Documentos); Storage; NotifManager                                                               |
-| FR-052 | El administrador deberá poder configurar la serie de las facturas (véase Q-06)                             | UC-04, UC-12               | Logic (Configuración, Facturación, Documentos); Storage; NotifManager                                                |
+| FR-052 | El superadministrador deberá poder configurar las series de las facturas (véase Q-06)                      | UC-04, UC-12               | Logic (Configuración, Facturación, Documentos); Storage; NotifManager                                                |
 | FR-053 | Generar una vista previa de la factura antes de emitirla                                                   | UC-12                      | Logic (Facturación, Documentos); Storage; NotifManager                                                               |
 | FR-054 | Bloquear la emisión de una factura cuando falten datos imprescindibles o se apliquen importes absurdos (v… | UC-12                      | Logic (Facturación, Documentos); Storage; NotifManager                                                               |
 | FR-055 | Avisar al usuario de toda situación de bloqueo o incidencia detectada antes de emitir una factura          | UC-12                      | Logic (Facturación, Documentos); Storage; NotifManager                                                               |
@@ -384,7 +384,7 @@ Generada a partir de la línea «Requisitos» de cada caso de uso en `casos-uso-
 | FR-068 | Al recibir el importe de una factura, el sistema deberá comprobar que se ha recibido el total y, en caso … | UC-17                      | Logic (Cobros y conciliación); StripeAdapter                                                                         |
 | FR-069 | Registrar la conclusión de la revisión de una diferencia de importe                                        | UC-17                      | Logic (Cobros y conciliación); StripeAdapter                                                                         |
 | FR-070 | Permitir una decisión administrativa de cancelar o considerar incobrable una deuda, como acción muy contr… | UC-16, UC-19               | Logic (Aprobaciones, Cobros y conciliación)                                                                          |
-| FR-071 | Enviar correos informando del incumplimiento del pago, con un primer aviso a los 3 días y un segundo avis… | UC-18                      | Logic (Recobro); Cron; Workers; NotifManager; MsgAdapter                                                             |
+| FR-071 | Enviar recordatorios de pago por correo: previo hacia el día 3 y otro en el vencimiento (por defecto, 5 días) | UC-18                      | Logic (Recobro); Cron; Workers; NotifManager; MsgAdapter                                                             |
 | FR-072 | El superadministrador deberá poder configurar los tiempos de los avisos de pago                            | UC-04, UC-18               | Logic (Configuración, Recobro); Cron; Workers; NotifManager; MsgAdapter                                              |
 | FR-073 | Si un cliente tiene condiciones pactadas a treinta días, su vencimiento deberá prevalecer sobre el valor … | UC-18                      | Logic (Recobro); Cron; Workers; NotifManager; MsgAdapter                                                             |
 | FR-074 | Una vez pasado el vencimiento, el sistema deberá continuar el flujo de impago enviando recordatorios peri… | UC-18                      | Logic (Recobro); Cron; Workers; NotifManager; MsgAdapter                                                             |
@@ -430,7 +430,7 @@ Generada a partir de la línea «Requisitos» de cada caso de uso en `casos-uso-
 | FR-114 | Permitir consultar las deudas pendientes de un cliente y comprobar, a través de la API, si tiene facturas… | UC-10, UC-30               | Logic (Suscripciones y tarifas); API                                                                                 |
 | FR-115 | Si el cliente tiene facturas pendientes, el sistema deberá dejar de generar nuevas mensualidades desde la… | UC-10                      | Logic (Suscripciones y tarifas)                                                                                      |
 | FR-116 | Si el cliente no tiene facturas pendientes, la parte de facturación deberá poder cerrar la recurrencia en… | UC-10                      | Logic (Suscripciones y tarifas)                                                                                      |
-| FR-117 | Permitir la baja de clientes solo cuando no tengan facturas pendientes, conservando sus datos según la le… | UC-10                      | Logic (Suscripciones y tarifas)                                                                                      |
+| FR-117 | No eliminar los datos de un cliente dado de baja (borrado lógico); la deuda no impide la baja (véase Q-04) | UC-10                      | Logic (Suscripciones y tarifas)                                                                                      |
 | FR-118 | Si un cliente vuelve a contratar la suscripción, el sistema deberá permitir reactivar su ficha histórica … | UC-10                      | Logic (Suscripciones y tarifas)                                                                                      |
 | FR-119 | Permitir guardar un borrador antes de completar un formulario para su revisión                             | UC-06                      | Logic (Clientes y contactos)                                                                                         |
 | FR-120 | Notificar los campos erróneos de un formulario                                                             | UC-06                      | Logic (Clientes y contactos)                                                                                         |
@@ -442,4 +442,4 @@ Generada a partir de la línea «Requisitos» de cada caso de uso en `casos-uso-
 | FR-126 | El acceso a un adjunto deberá seguir los permisos del cliente o de la factura a los que esté asociado      | UC-21                      | Logic (Incidencias, comentarios y adjuntos, Documentos); Storage                                                     |
 | FR-127 | Permitir comentar en una factura o en una incidencia, mencionar a otro usuario y generarle una notificaci… | UC-21, UC-22               | Logic (Incidencias, comentarios y adjuntos, Documentos); Storage; NotifManager                                       |
 
-(\*) FR-011 no aparece en la línea «Requisitos» de ningún caso de uso de la especificación. Se asigna aquí de forma provisional a UC-17 y UC-23 (véase 10.1).
+(\*) FR-011 no aparece en la línea «Requisitos» de ningún caso de uso de la especificación. Se asigna aquí de forma provisional a UC-17 y UC-23.
