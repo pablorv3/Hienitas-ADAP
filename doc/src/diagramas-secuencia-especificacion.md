@@ -4,7 +4,6 @@
 - **Entrega:** Entrega 2 — Diseño del Sistema
 - **Artefacto:** Modelado Dinámico — Diagramas de Secuencia UML (`DS-01` a `DS-08`)
 - **Notación:** UML 2.x (especificación fuente en PlantUML: `doc/src/diagramas-secuencia/*.pu`)
-- **Estado:** Borrador — pendiente de revisión cruzada (revisor: [COMPLETAR], fecha: [COMPLETAR])
 
 ---
 

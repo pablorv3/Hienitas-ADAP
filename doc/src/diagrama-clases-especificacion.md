@@ -2,8 +2,7 @@
 
 **Proyecto:** Sistema Interno de Gestión de Facturación y Cobros (**Turbine**)  
 **Módulo:** Diseño Detallado de Dominio, Servicios e Integraciones  
-**Diagrama Asociado:** `doc/src/diagrama-clases.pu` _(exportado a `doc/diagrama-clases.pdf`)_  
-**Estado:** Borrador — pendiente de revisión cruzada (revisor: [COMPLETAR], fecha: [COMPLETAR])
+**Diagrama Asociado:** `doc/src/diagrama-clases.pu` _(exportado a `doc/diagrama-clases.pdf`)_
 
 ---
 

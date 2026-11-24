@@ -6,7 +6,6 @@
 - **Diagrama Asociado:** `doc/src/base-datos-entidad-relacion-diagrama.pu` _(exportado a `doc/base-datos-entidad-relacion-diagrama.pdf`)_
 - **Motor y ORM:** PostgreSQL / Prisma ORM
 - **Notación:** _Information Engineering_ (IE / _Crow's Foot_ — Oracle SQL Developer Data Modeler)
-- **Estado:** Borrador — pendiente de revisión cruzada (revisor: [COMPLETAR], fecha: [COMPLETAR])
 
 ---
 
