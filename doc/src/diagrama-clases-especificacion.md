@@ -2,7 +2,8 @@
 
 **Proyecto:** Sistema Interno de Gestión de Facturación y Cobros (**Turbine**)  
 **Módulo:** Diseño Detallado de Dominio, Servicios e Integraciones  
-**Estado:** Validado para Implementación
+**Diagrama Asociado:** `doc/src/diagrama-clases.pu` _(exportado a `doc/diagrama-clases.pdf`)_  
+**Estado:** Borrador — pendiente de revisión cruzada (revisor: [COMPLETAR], fecha: [COMPLETAR])
 
 ---
 
@@ -47,16 +48,16 @@ Antes de detallar cada clase, se justifica el porqué de los **7 patrones de dis
   2. `ICanalMensajeria`, implementada por `EmailSimuladoAdapter` y `WhatsAppSimuladoAdapter`.
 - **Beneficio:** El núcleo de Turbine invoca siempre los mismos métodos estándar (`consultarEstadoPago`, `enviar`). Sustituir el simulador por el SDK oficial de Stripe o SendGrid en el futuro solo requerirá crear una nueva clase adaptadora sin tocar una sola línea del dominio.
 
-### 2.3. Patrón State (`EstadoFactura`)
+### 2.3. Patrón State (`IEstadoFactura`)
 
-- **Problema Preliminar:** Una factura atraviesa distintos estados (`Pendiente`, `Pagada`, `Impagada`). Las operaciones permitidas cambian radicalmente según el estado: por ejemplo, una factura `Pagada` no puede volver a cobrarse ni pasar a `Impagada`, y una factura en trimestre cerrado queda bloqueada. Gestionar esto con condicionales dentro de `Factura` generaría un código frágil y propenso a estados inconsistentes.
-- **Solución:** Se encapsula cada estado en una clase concreta (`EstadoPendiente`, `EstadoPagada`, `EstadoImpagada`) que implementa la interfaz `EstadoFactura`.
-- **Beneficio:** Garantiza transiciones de estado válidas por diseño y cumple estrictamente las reglas de negocio de cobros y bloqueo contable.
+- **Problema Preliminar:** Una factura atraviesa distintas fases como documento (borrador, pendiente de aprobación, lista para emitir, emitida, anulada, rectificada). Las operaciones permitidas cambian radicalmente según la fase: por ejemplo, una factura emitida no puede editar sus líneas y solo se corrige mediante rectificativa, y una factura en trimestre cerrado queda bloqueada. Gestionar esto con condicionales dentro de `Factura` generaría un código frágil y propenso a estados inconsistentes.
+- **Solución:** El patrón State modela solo el ciclo del _documento_ (`EstadoBorrador`, `EstadoPendienteAprobacion`, `EstadoListaEmitir`, `EstadoEmitida`, `EstadoAnulada`, `EstadoRectificada`), que determina qué operaciones están permitidas. El estado de _cobro_ (pendiente, vencida, pagada, incobrable) no es un estado persistido: `Factura.estadoCobro()` lo calcula a partir de los cobros conciliados, la fecha de vencimiento y la marca `incobrable`.
+- **Beneficio:** Garantiza transiciones de estado válidas por diseño y evita mezclar «emitida» con «pagada» (`AD-06`, `A-14`).
 
-### 2.4. Patrón Strategy (`IEstrategiaCalculoCuota`)
+### 2.4. Patrón Strategy (`IEstrategiaCalculoTarifa`)
 
 - **Problema Preliminar:** El cálculo de la cuota de una suscripción varía según la casuística comercial (RB-02): mensualidad completa el día 1, prorrateo proporcional si el alta se produce a mitad de mes, o exención de prorrateo por acuerdo comercial.
-- **Solución:** Se delega el algoritmo de cálculo de importe a una familia de estrategias intercambiables (`EstrategiaMensualidadCompleta`, `EstrategiaProrrateoInicial`, `EstrategiaExcepcionComercial`) bajo la interfaz `IEstrategiaCalculoCuota`.
+- **Solución:** Se delega el algoritmo de cálculo de importe a una familia de estrategias intercambiables (`CalculoEstandarStrategy`, `CalculoProrrateoAltaStrategy`, `CalculoExcepcionComercialStrategy`) bajo la interfaz `IEstrategiaCalculoTarifa`.
 - **Beneficio:** Permite añadir nuevas modalidades tarifarias o promociones sin modificar la clase `Suscripcion`.
 
 ### 2.5. Patrón Observer (`GestorEventosDominio`)
@@ -65,16 +66,16 @@ Antes de detallar cada clase, se justifica el porqué de los **7 patrones de dis
 - **Solución:** Se implementa un bus ligero de eventos de dominio (`GestorEventosDominio`) al que se suscriben observadores especializados (`AuditoriaObserver`, `NotificacionObserver`).
 - **Beneficio:** Desacopla completamente la lógica financiera de la trazabilidad y las alertas internas.
 
-### 2.6. Patrón Decorator (`IGeneradorPDF`)
+### 2.6. Patrón Decorator (`IDocumentoPDF`)
 
-- **Problema Preliminar:** Las facturas en PDF requieren distintas variantes visuales según el contexto: vista previa con marca de agua de borrador, factura definitiva, factura con sello de pagada o factura rectificativa con nota legal. Crear subclases para cada combinación (`FacturaPDFBorradorRectificativa`, etc.) provocaría una explosión combinatoria de clases.
-- **Solución:** Sobre un componente base (`GeneradorPDFBase`), se envuelven decoradores dinámicos (`MarcaAguaBorradorDecorator`, `SelloPagadaDecorator`, `NotaLegalRectificativaDecorator`).
+- **Problema Preliminar:** Los documentos PDF requieren distintas variantes visuales según el contexto: vista previa de una factura con marca de agua de borrador, factura definitiva o informe exportado con cabecera de auditoría (usuario, fecha y filtros, `FR-100`). Crear subclases para cada combinación provocaría una explosión combinatoria de clases.
+- **Solución:** Sobre un componente base (`FacturaPDFBase`), se envuelven decoradores dinámicos que heredan de `DocumentoPDFDecorator` (`MarcaAguaBorradorDecorator`, `CabeceraAuditoriaDecorator`).
 - **Beneficio:** Permite componer dinámicamente las capas visuales del PDF en tiempo de ejecución.
 
-### 2.7. Patrón Factory Method (`CreadorDocumentoFacturacion`)
+### 2.7. Patrón Factory Method (`FacturaFactory`)
 
-- **Problema Preliminar:** Aunque todas las facturas comparten estructura, la forma de construir e inicializar una **factura recurrente** (desde una suscripción), una **factura puntual** (desde conceptos manuales o presupuesto) y una **factura rectificativa** (vinculada a una factura original) sigue reglas y series distintas.
-- **Solución:** Se define un creador abstracto con fábricas concretas (`FabricaFacturaRecurrente`, `FabricaFacturaPuntual`, `FabricaFacturaRectificativa`) que encapsulan la validación previa e instanciación.
+- **Problema Preliminar:** Aunque todas las facturas comparten estructura, la forma de construir e inicializar una **factura recurrente** (desde una suscripción), una **factura puntual** (desde conceptos manuales) y una **factura rectificativa** (vinculada a una factura original) sigue reglas y series distintas.
+- **Solución:** Se define un creador abstracto (`FacturaFactory`) con fábricas concretas (`FacturaRecurrenteFactory`, `FacturaPuntualFactory`, `FacturaRectificativaFactory`) que encapsulan la validación previa e instanciación.
 - **Beneficio:** Asegura que ningún documento financiero se cree sin cumplir sus precondiciones legales y de numeración.
 
 ---
@@ -89,13 +90,21 @@ Coordina los flujos complejos de facturación, cobros y exportación documental,
 
 - **Métodos:**
   - `+ generarFacturacionMensual(fecha : Date) : ResumenEjecucion`
-    - **Qué hace:** Ejecuta el proceso masivo correspondiente al día 1 de cada mes (UC-11). Recupera todas las suscripciones activas (ignorando las pausadas y clientes dados de baja), delega la creación de cada factura a `FabricaFacturaRecurrente`, calcula los importes aplicando la estrategia de tarifa correspondiente y devuelve un objeto `ResumenEjecucion` con el conteo de facturas generadas, importes totales y posibles incidencias.
+    - **Qué hace:** Ejecuta el proceso masivo correspondiente al día 1 de cada mes (UC-14). Recupera todas las suscripciones activas (ignorando las pausadas y los clientes con baja efectiva), delega la creación de cada factura a `FacturaRecurrenteFactory`, calcula los importes aplicando la estrategia de tarifa correspondiente y devuelve un objeto `ResumenEjecucion` con el conteo de facturas generadas, importes totales y posibles incidencias, que queda guardado en `EjecucionProceso` (FR-110).
   - `+ emitirYEnviarFactura(facturaId : UUID) : void`
-    - **Qué hace:** Oficializa una factura en borrador y la remite al cliente (UC-12, UC-13). Verifica primero mediante `cliente.validarDatosFiscales()` que no falte ningún dato obligatorio (NIF, razón social, país); si falta alguno, aborta la operación indicando el campo exacto. A continuación, asigna serie y número correlativo oficial, marca `emitida = true`, genera el PDF definitivo mediante `IGeneradorPDF` y lo envía a través de `ICanalMensajeria` (Email principal y, si rebota, contacto suplente o canal complementario). Finalmente, publica el evento `FacturaEmitida`.
+    - **Qué hace:** Oficializa una factura en borrador y la remite al cliente (UC-12, UC-13). Verifica primero mediante `cliente.validarDatosFiscales()` que no falte ningún dato obligatorio (NIF, razón social, domicilio fiscal, país); si falta alguno, aborta la operación indicando el campo exacto. Si la factura incluye excepciones, la pasa a `EstadoPendienteAprobacion` (UC-12 A1). En otro caso, `SerieFacturacion.asignarSiguienteNumero()` asigna el número correlativo, la factura pasa a `EstadoEmitida`, se genera el PDF definitivo mediante `IDocumentoPDF` y se envía a través de `ICanalMensajeria` al primer contacto de facturación y, si rebota, a los demás contactos de facturación activos por prioridad. Cada intento queda registrado como `Envio`. Finalmente, publica el evento `FACTURA_EMITIDA`.
+  - `+ conciliarCobrosConfirmados(desde : Timestamp) : ResumenEjecucion`
+    - **Qué hace:** Proceso periódico de conciliación (UC-17, `DS-03`). Recupera los cobros confirmados mediante `IConsultarCobroExterno.obtenerCobrosConfirmados(desde)` y, para cada uno, descarta los ya registrados (`fuente`, `eventoExternoId`), localiza la factura y delega en `conciliarPagoExterno`.
   - `+ conciliarPagoExterno(referencia : String) : void`
-    - **Qué hace:** Verifica y registra un cobro proveniente de la pasarela externa (UC-17). Consulta los detalles del pago a través de `IConsultarCobroExterno`, localiza la factura asociada, crea la entidad `Cobro` y delega en `factura.registrarCobro(importe)`. Si el importe recibido difiere del total de la factura (pago parcial o sobrepago), publica un evento para que `NotificacionObserver` genere una alerta de revisión para el responsable.
+    - **Qué hace:** Verifica y registra un cobro proveniente de la pasarela externa (UC-17). Consulta los detalles del pago a través de `IConsultarCobroExterno`, localiza la factura asociada, crea la entidad `Cobro` y delega en `factura.registrarCobro(cobro)`. Si no hay factura clara, el cobro queda con `estadoConciliacion = PENDIENTE` para revisión manual (FR-067.2). Si el importe recibido difiere del saldo pendiente (pago parcial o sobrepago), publica un evento para que `NotificacionObserver` genere una alerta de revisión para el responsable.
   - `+ exportarFacturaPDF(facturaId : UUID, esBorrador : Boolean) : byte[]`
-    - **Qué hace:** Construye y devuelve el flujo binario (`byte[]`) del documento PDF listo para descarga o vista previa. Si `esBorrador` es `true` (o `factura.emitida` es `false`), envuelve `GeneradorPDFBase` con `MarcaAguaBorradorDecorator`. Si la factura ya está pagada o es rectificativa, apila `SelloPagadaDecorator` o `NotaLegalRectificativaDecorator` según corresponda.
+    - **Qué hace:** Construye y devuelve el flujo binario (`byte[]`) del documento PDF listo para descarga o vista previa. Si `esBorrador` es `true` (o la factura aún no está en `EstadoEmitida`), envuelve `FacturaPDFBase` con `MarcaAguaBorradorDecorator`. El PDF definitivo se genera una sola vez al emitir y se conserva en `StorageSeguro` (NFR-01).
+  - `+ consultarEstadoDeudaCliente(nif : String) : ResumenDeuda`
+    - **Qué hace:** Operación expuesta a la API externa (UC-30, FR-114, `DS-08`). Devuelve un resumen mínimo con las facturas emitidas no incobrables cuyo `saldoPendiente()` es mayor que cero.
+  - `+ registrarSolicitudBajaExterna(nif : String, motivo : String) : SolicitudAprobacion`
+    - **Qué hace:** Registra una solicitud de baja recibida por la API (FR-113, FR-114.1, `DS-08`) como `SolicitudAprobacion` pendiente; ningún sistema externo da de baja directamente al cliente.
+  - `- registrarEnvio(factura : Factura, contacto : Contacto, estado : String) : Envio`
+    - **Qué hace:** Crea el registro `Envio` de cada intento con el destinatario como instantánea, enlazando los reintentos con el envío original (FR-064, FR-065).
 
 ---
 
@@ -131,7 +140,7 @@ Contrato único para el envío de comunicaciones externas (facturas emitidas, av
 
 Adaptador simulado para correo electrónico.
 
-- **Métodos:** Implementa `+ enviar(...)` validando el formato del correo electrónico, simulando latencia de envío y controlando rebotes simulados para activar el flujo alternativo de reintento al contacto suplente.
+- **Métodos:** Implementa `+ enviar(...)` validando el formato del correo electrónico, simulando latencia de envío y controlando rebotes simulados para activar el flujo alternativo de reintento con otro contacto de facturación del cliente.
 
 #### Clase `WhatsAppSimuladoAdapter` _(implementa `ICanalMensajeria`)_
 
@@ -147,27 +156,43 @@ Adaptador simulado para mensajería instantánea vía WhatsApp (canal complement
 
 Representa a la empresa cliente de Turbine y encapsula sus datos fiscales, comerciales y reglas de ciclo de vida.
 
-- **Atributos principales:** `id : UUID`, `nif : String`, `nombreComercial : String`, `razonSocial : String`, `pais : String`, `moneda : String`, `impuestoRate : Decimal`, `email : String`, `telefono : String`, `activo : Boolean`.
+- **Atributos principales:** `id : UUID`, `nif : String`, `nombreComercial : String`, `razonSocial : String`, `domicilioFiscal : String`, `pais : String`, `moneda : String`, `impuestoRate : Decimal`, `estado : EstadoCliente`, `fechaBajaEfectiva : Date`.
+- **Enumeración `EstadoCliente`:** `PENDIENTE_ACTIVACION`, `ACTIVO`, `PAUSADO`, `BAJA_SOLICITADA`, `INACTIVO` (A-14). `INACTIVO` es el borrado lógico.
 - **Métodos:**
   - `+ validarDatosFiscales() : Boolean`
-    - **Qué hace:** Comprueba que todos los campos legalmente exigibles para emitir una factura (`nif`, `razonSocial`, `pais`, `moneda`, `impuestoRate`) estén informados y cumplan el formato básico. Es invocada obligatoriamente antes de cualquier emisión definitiva.
-  - `+ puedeDarseDeBaja() : Boolean`
-    - **Qué hace:** Evalúa las precondiciones de baja (UC-10). Verifica que el cliente no tenga facturas en estado `Pendiente` o `Impagada` sin resolver ni suscripciones activas sin cancelar, impidiendo inconsistencias contables.
+    - **Qué hace:** Comprueba que todos los campos legalmente exigibles para emitir una factura (`nif`, `razonSocial`, `domicilioFiscal`, `pais`, `moneda`, `impuestoRate`) estén informados y cumplan el formato básico, y que exista al menos un contacto de facturación activo. Es invocada obligatoriamente antes de cualquier emisión definitiva.
+  - `+ contactosFacturacion() : List<Contacto>`
+    - **Qué hace:** Devuelve los contactos activos con rol `FACTURACION` ordenados por `prioridad`. Es la lista que recorre el envío de facturas y sus reintentos (UC-13, FR-064).
+  - `+ solicitarBaja(fechaEfectiva : Date) : void`
+    - **Qué hace:** Registra la solicitud de baja (UC-10, FR-113) y pasa el cliente a `BAJA_SOLICITADA`. Desde `fechaEfectiva` no se generan nuevas mensualidades. Si `tieneDeudaPendiente()` es falso, cierra la recurrencia en esa fecha y el cliente pasa a `INACTIVO`. Si es verdadero, mantiene el recobro de las facturas anteriores (FR-115); la deuda no bloquea la baja (Q-04, FR-117).
+  - `+ tieneDeudaPendiente() : Boolean`
+    - **Qué hace:** Devuelve verdadero si existe alguna factura emitida, no incobrable, con `saldoPendiente() > 0`. Es la consulta que expone la API (FR-114).
   - `+ reactivar() : void`
-    - **Qué hace:** Cambia el estado del cliente inactivo a `activo = true`, habilitando nuevamente la posibilidad de asociarle suscripciones o emitirle facturas, y dispara el evento de auditoría correspondiente.
+    - **Qué hace:** Devuelve a `ACTIVO` un cliente `INACTIVO` o con baja solicitada, reutilizando su ficha histórica (FR-118), y dispara el evento de auditoría correspondiente.
+
+#### Clases `Contacto` y `ClienteContacto`
+
+- **`Contacto`:** Persona de contacto del cliente (`id : UUID`, `nombre : String`, `email : String`, `telefono : String`, `idioma : String`, `admiteWhatsApp : Boolean`, `activo : Boolean`). Un contacto inactivo conserva su histórico de envíos (FR-017.1).
+- **`ClienteContacto`:** Clase de asociación `N:M` entre `Cliente` y `Contacto` con `rol : String` (`CONTRATACION`, `FACTURACION`, `IMPAGO`) y `prioridad : Integer`.
 
 #### Clase `Etiqueta`
 
 Permite clasificar y segmentar clientes (`id : UUID`, `nombre : String`) para filtrado rápido y generación de informes.
 
+#### Clase `TarifaRango`
+
+Tramo de tarifa según la facturación anual del cliente (Q-07): `id : UUID`, `nombre : String`, `facturacionDesde : Decimal`, `facturacionHasta : Decimal`, `precioMensual : Decimal`, `vigenteDesde : Date`, `vigenteHasta : Date`.
+
+- `+ aplicaA(facturacionAnual : Decimal, fecha : Date) : Boolean`: Indica si el tramo corresponde a una facturación anual y está vigente en la fecha dada. Un cambio de precio crea un tramo nuevo con fecha de efecto y no reescribe facturas emitidas (FR-036).
+
 #### Clase `Suscripcion`
 
-Modela el acuerdo periódico de cobro asociado a un cliente.
+Modela el acuerdo periódico de cobro asociado a un cliente. La periodicidad es siempre mensual (Q-07, RB-03).
 
-- **Atributos principales:** `id : UUID`, `rangoCobro : String` (`MENSUAL`, `ANUAL`), `precioBase : Decimal`, `pausada : Boolean`, `motivoPausa : String`, `fechaInicioPausa : Timestamp`.
+- **Atributos principales:** `id : UUID`, `tarifaRango : TarifaRango`, `precioBase : Decimal`, `pausada : Boolean`, `motivoPausa : String`, `fechaInicioPausa : Timestamp`.
 - **Métodos:**
   - `+ calcularImportePeriodo(fecha : Date) : Decimal`
-    - **Qué hace:** Calcula el importe exacto a facturar para el periodo indicado delegando en la `IEstrategiaCalculoCuota` asignada (mensualidad completa, prorrateo inicial por días restantes del mes o exención comercial).
+    - **Qué hace:** Calcula el importe exacto a facturar para el periodo indicado delegando en la `IEstrategiaCalculoTarifa` asignada (mensualidad completa, prorrateo inicial por días restantes del mes o exención comercial).
   - `+ pausar(motivo : String) : void`
     - **Qué hace:** Suspende temporalmente la generación de facturas recurrentes estableciendo `pausada = true`, registrando el `motivo` obligatorio y fijando `fechaInicioPausa` con la marca de tiempo actual (FR-037). Durante la pausa, los procesos mensuales omiten esta suscripción sin afectar a facturas previas.
   - `+ reanudar() : void`
@@ -177,18 +202,27 @@ Modela el acuerdo periódico de cobro asociado a un cliente.
 
 Entidad central financiera. Actúa como **Contexto** del patrón _State_ y contiene la composición de sus líneas de detalle.
 
-- **Atributos principales:** `id : UUID`, `numero : String`, `serie : String`, `tipo : String` (`RECURRENTE`, `PUNTUAL`, `RECTIFICATIVA`), `estadoCobro : String`, `emitida : Boolean`, `fechaEmision : Timestamp`, `fechaVencimiento : Timestamp`, `baseImponible : Decimal`, `impuestoTotal : Decimal`, `total : Decimal`, `trimestreCerrado : Boolean`.
+- **Atributos principales:** `id : UUID`, `numero : String`, `serie : String`, `tipo : String` (`RECURRENTE`, `PUNTUAL`, `RECTIFICATIVA`), `incobrable : Boolean`, `periodoFacturacion : Date`, `fechaEmision : Date`, `fechaVencimiento : Date`, `moneda : String`, `baseImponible : Decimal`, `impuestoTotal : Decimal`, `total : Decimal`, `trimestreCerrado : Boolean`. El ciclo del documento lo determina la asociación `estadoActual : IEstadoFactura` (persistida como `estadoDocumento`).
+- **Enumeración `EstadoCobro`:** `PENDIENTE`, `VENCIDA`, `PAGADA`, `INCOBRABLE`. No se almacena: la calcula `estadoCobro()`.
 - **Métodos:**
   - `+ agregarLinea(linea : LineaFactura) : void`
-    - **Qué hace:** Añade un concepto desglosado a la factura siempre que no esté emitida ni pertenezca a un trimestre cerrado, y dispara automáticamente el recálculo de `baseImponible`, `impuestoTotal` y `total`.
-  - `+ calcularTotales() : void`
+    - **Qué hace:** Añade un concepto desglosado delegando en `estadoActual.editarLineas(...)`, que solo lo permite antes de la emisión y fuera de un trimestre cerrado, y dispara automáticamente el recálculo de `baseImponible`, `impuestoTotal` y `total`.
+  - `+ recalcularTotales() : void`
     - **Qué hace:** Recorre todas las instancias de `LineaFactura` asociadas y calcula con precisión decimal la suma de subtotales, los impuestos aplicables y el importe total.
-  - `+ registrarCobro(importe : Decimal) : void`
-    - **Qué hace:** Delega la operación en su objeto de estado interno (`estadoActual.procesarPago(this, importe)`), garantizando que las reglas de transición y validación de importes se ejecuten según el estado actual de la factura.
-  - `+ marcarComoImpagada() : void`
-    - **Qué hace:** Delega en `estadoActual.marcarImpagada(this)` cuando se supera la fecha de vencimiento y los plazos de gracia configurados sin haberse recibido el pago.
+  - `+ emitir() : void`
+    - **Qué hace:** Delega en `estadoActual.emitir(this)`. Solo `EstadoBorrador` (sin excepciones) y `EstadoListaEmitir` lo permiten: asignan serie y número y transicionan a `EstadoEmitida`.
+  - `+ registrarCobro(cobro : Cobro) : void`
+    - **Qué hace:** Asocia un `Cobro` conciliado a una factura emitida. No cambia el estado del documento: el efecto se refleja en `saldoPendiente()` y `estadoCobro()`. Rechaza el cobro si la factura no está emitida.
+  - `+ estadoCobro() : EstadoCobro`
+    - **Qué hace:** Devuelve `INCOBRABLE` si `incobrable` es verdadero; `PAGADA` si los cobros conciliados activos cubren el total (RB-10, RB-18); `VENCIDA` si `saldoPendiente() > 0` y la fecha actual supera `fechaVencimiento`; y `PENDIENTE` en otro caso.
+  - `+ saldoPendiente() : Decimal`
+    - **Qué hace:** Devuelve `total` menos la suma de los cobros conciliados no revertidos.
+  - `+ esTrimestreCerrado() : Boolean`
+    - **Qué hace:** Indica si la factura pertenece a un periodo cerrado (RB-08).
   - `+ cerrarTrimestre() : void`
-    - **Qué hace:** Establece `trimestreCerrado = true`, bloqueando de forma permanente cualquier modificación sobre la factura.
+    - **Qué hace:** Establece `trimestreCerrado = true`, bloqueando cualquier modificación ordinaria sobre la factura (UC-27).
+  - `+ cancelarPorIncobrable(motivo : String) : void`
+    - **Qué hace:** Marca `incobrable = true` solo tras aprobarse una `SolicitudAprobacion` de tipo `INCOBRABLE` (UC-19, FR-070.1), conservando el motivo y deteniendo los recordatorios. No equivale a pagada.
 
 #### Clase `LineaFactura`
 
@@ -200,45 +234,65 @@ Representa cada ítem desglosado dentro de una factura (`numeroLinea : Integer`,
 
 #### Clase `Cobro`
 
-Registra cada transacción económica conciliada contra una factura (`id : UUID`, `referenciaExterna : String`, `fechaPago : Timestamp`, `importe : Decimal`).
+Registra cada movimiento de pago recibido de una fuente externa (`id : UUID`, `fuente : String`, `eventoExternoId : String`, `referenciaExterna : String`, `fechaPago : Timestamp`, `importe : Decimal`, `moneda : String`, `estadoConciliacion : String` — `PENDIENTE`, `AUTOMATICA`, `MANUAL`, `REVERTIDA` —, `fechaConciliacion : Timestamp`). Puede existir sin factura asociada mientras está pendiente de conciliación manual (FR-067.2).
+
+- `+ revertir(usuario : Usuario, motivo : String) : void`: Revierte una conciliación errónea sin borrar el evento, registrando quién, cuándo y por qué (FR-069.1).
+
+#### Clase `Envio`
+
+Registra cada intento de envío de una factura (`id : UUID`, `destinatario : String`, `canal : String`, `estado : String` — `EN_COLA`, `ENVIADO`, `ENTREGADO`, `FALLIDO`, `REBOTADO` —, `fecha : Timestamp`, `detalleError : String`), con el contacto y la plantilla usados y una autoasociación `envioOriginal` (UC-13, FR-064, FR-065).
+
+- `+ esReintento() : Boolean`: Devuelve verdadero si el envío referencia a un envío original.
+
+#### Clase `SerieFacturacion`
+
+Serie de numeración configurada por el superadministrador (`codigo : String`, `descripcion : String`, `ultimoNumero : Integer`, `activa : Boolean`; FR-052).
+
+- `+ asignarSiguienteNumero() : String`: Incrementa `ultimoNumero` dentro de la transacción de emisión, con la fila de la serie bloqueada, y devuelve el número asignado (FR-051, RB-07, AD-03).
+
+#### Entidad de soporte `EjecucionProceso`
+
+La tabla `EJECUCION_PROCESO` del modelo físico (registro de ejecución de procesos automáticos, FR-110) no aparece en el diagrama de clases porque no tiene comportamiento de dominio propio: la escribe `FacturacionFacade` al terminar cada proceso a partir del `ResumenEjecucion`.
 
 ---
 
 ### 3.4. Máquina de Estados de Factura (`<<State>>`)
 
-#### Interfaz `EstadoFactura`
+#### Interfaz `IEstadoFactura`
 
-Define las operaciones sensibles al estado de una factura:
+Define las operaciones sensibles al ciclo del documento:
 
-- `+ procesarPago(factura : Factura, importe : Decimal) : void`
-- `+ marcarImpagada(factura : Factura) : void`
+- `+ editarLineas(factura : Factura, linea : LineaFactura) : void`
+- `+ solicitarAprobacion(factura : Factura, motivo : String) : void`
+- `+ aprobar(factura : Factura, aprobador : Usuario) : void`
+- `+ emitir(factura : Factura) : void`
+- `+ anular(factura : Factura, motivo : String) : void`
+- `+ rectificar(factura : Factura) : Factura`
+
+Cualquier operación no permitida en un estado lanza una excepción de dominio. El cobro no forma parte de esta interfaz: es un estado derivado (`Factura.estadoCobro()`).
 
 #### Clases Concretas de Estado
 
-1. **`EstadoPendiente`:**
-   - `procesarPago`: Verifica que `trimestreCerrado` sea `false`. Compara `importe` con `factura.total`. Si coincide (o completa el saldo pendiente), transiciona la factura a `EstadoPagada` y publica `FacturaPagada`. Si hay discrepancia (falta o sobra dinero), mantiene o ajusta el seguimiento y publica `DiscrepanciaCobroDetectada` (FR-068).
-   - `marcarImpagada`: Verifica que la fecha actual supere `factura.fechaVencimiento` y transiciona la factura a `EstadoImpagada`, disparando las notificaciones de morosidad.
-2. **`EstadoPagada`:**
-   - `procesarPago`: Rechaza la operación lanzando una excepción de dominio (`FacturaYaPagadaException`), impidiendo duplicidades de cobro.
-   - `marcarImpagada`: Rechaza la transición, ya que una deuda saldada no puede pasar a impagada.
-3. **`EstadoImpagada`:**
-   - `procesarPago`: Permite recobrar la deuda atrasada si el trimestre no está cerrado; si se completa el importe, transiciona la factura a `EstadoPagada` y detiene futuros recordatorios de impago.
-   - `marcarImpagada`: Operación idempotente (no realiza cambios).
+1. **`EstadoBorrador`:** Permite `editarLineas` y `anular` (un borrador nunca emitido puede descartarse dejando traza). `solicitarAprobacion` transiciona a `EstadoPendienteAprobacion` cuando hay excepciones (UC-12 A1, FR-079). `emitir` valida que no haya excepciones, asigna serie y número y transiciona a `EstadoEmitida`.
+2. **`EstadoPendienteAprobacion`:** Bloquea la edición. `aprobar` transiciona a `EstadoListaEmitir` tras aprobarse la `SolicitudAprobacion` (UC-16); un rechazo devuelve la factura a `EstadoBorrador`.
+3. **`EstadoListaEmitir`:** `emitir` asigna serie y número y transiciona a `EstadoEmitida`.
+4. **`EstadoEmitida`:** Rechaza `editarLineas`. `rectificar` crea la rectificativa mediante `FacturaRectificativaFactory` y transiciona la original a `EstadoRectificada` (RB-06); `anular` transiciona a `EstadoAnulada` cuando proceda. Ambas comprueban que el periodo no esté cerrado (RB-08).
+5. **`EstadoAnulada`** y **`EstadoRectificada`:** Estados finales; rechazan todas las operaciones.
 
 ---
 
 ### 3.5. Estrategias de Cálculo de Cuotas (`<<Strategy>>`)
 
-#### Interfaz `IEstrategiaCalculoCuota`
+#### Interfaz `IEstrategiaCalculoTarifa`
 
-- `+ calcular(suscripcion : Suscripcion, fechaReferencia : Date) : Decimal`
+- `+ calcular(suscripcion : Suscripcion, fecha : Date) : Decimal`
 
 #### Estrategias Concretas
 
-1. **`EstrategiaMensualidadCompleta`:** Devuelve el 100 % de `suscripcion.precioBase` (aplicable a facturaciones ordinarias el día 1 de mes).
-2. **`EstrategiaProrrateoInicial`:** Calcula la parte proporcional cuando un cliente se da de alta en un día distinto del 1 (RB-02 / FR-041), aplicando:
+1. **`CalculoEstandarStrategy`:** Devuelve el 100 % de `suscripcion.precioBase` (aplicable a facturaciones ordinarias el día 1 de mes).
+2. **`CalculoProrrateoAltaStrategy`:** Calcula la parte proporcional cuando un cliente se da de alta en un día distinto del 1 (RB-02 / FR-041), aplicando la regla de A-16:
    $$\text{ImporteProrrateado} = \text{precioBase} \times \frac{\text{DíasRestantesMes}}{\text{DíasTotalesMes}}$$
-3. **`EstrategiaExcepcionComercial`:** Devuelve `0.00` (o el importe pactado explícitamente) cuando existe una exención de prorrateo aprobada comercialmente (FR-043), dejando constancia explícita en el concepto de la línea.
+3. **`CalculoExcepcionComercialStrategy`:** Devuelve `0.00` (o el importe pactado explícitamente) cuando existe una exención de prorrateo aprobada comercialmente (FR-043), dejando constancia explícita en el concepto de la línea.
 
 ---
 
@@ -246,20 +300,20 @@ Define las operaciones sensibles al estado de una factura:
 
 #### Creadores de Documentos (`<<Factory Method>>`)
 
-- **`CreadorDocumentoFacturacion` (Abstracto):**
-  - `+ crearFactura(origen : Object) : Factura` _(Método Fábrica)_: Define la firma para instanciar una factura a partir de su entidad origen.
-- **`FabricaFacturaRecurrente`:** Toma una `Suscripcion` activa, valida que el cliente esté activo, invoca `suscripcion.calcularImportePeriodo(...)` y construye la factura periódica con serie ordinaria.
-- **`FabricaFacturaPuntual`:** Toma conceptos manuales o un presupuesto aceptado, valida datos fiscales y construye una factura de cobro único.
-- **`FabricaFacturaRectificativa`:** Toma una `Factura` ya emitida, exige un motivo de rectificación, vincula `facturaOriginalId` (RB-06) y genera la factura de abono o corrección con su serie específica.
+- **`FacturaFactory` (Abstracto):**
+  - `+ crearFactura(cliente : Cliente) : Factura` _(Método Fábrica)_: Define la firma para instanciar una factura en `EstadoBorrador` para un cliente.
+- **`FacturaRecurrenteFactory`:** Toma una `Suscripcion` activa, valida que el cliente no tenga la baja efectiva, invoca `suscripcion.calcularImportePeriodo(...)` y construye la factura periódica con `periodoFacturacion` y serie ordinaria.
+- **`FacturaPuntualFactory`:** Toma conceptos manuales, valida datos fiscales y construye una factura de cobro único.
+- **`FacturaRectificativaFactory`:** Toma una `Factura` ya emitida, exige un motivo de rectificación, vincula `facturaOriginalId` (RB-06) y genera la factura de abono o corrección con su serie específica.
 
 #### Generación Visual de PDF (`<<Decorator>>`)
 
-- **Interfaz `IGeneradorPDF`:**
-  - `+ generar(factura : Factura) : byte[]`: Genera la representación binaria en PDF de la factura.
-- **`GeneradorPDFBase`:** Renderiza la plantilla corporativa base de Turbine con logotipo, datos fiscales del emisor y cliente, tabla de `LineaFactura` y desglose de impuestos.
-- **`MarcaAguaBorradorDecorator`:** Envuelve a un `IGeneradorPDF` y superpone en diagonal la marca de agua _"BORRADOR - VISTA PREVIA SIN VALIDEZ FISCAL"_ antes de la emisión definitiva.
-- **`SelloPagadaDecorator`:** Añade el sello visual de _"PAGADA"_ junto con la fecha de conciliación cuando `factura.estadoCobro == 'PAGADA'`.
-- **`NotaLegalRectificativaDecorator`:** Añade un bloque destacado indicando explícitamente el número y fecha de la factura original a la que rectifica.
+- **Interfaz `IDocumentoPDF`:**
+  - `+ generarBytes() : byte[]`: Genera la representación binaria en PDF del documento.
+- **`FacturaPDFBase`:** Renderiza la plantilla corporativa base de Turbine con logotipo, datos fiscales del emisor y cliente, tabla de `LineaFactura` y desglose de impuestos.
+- **`DocumentoPDFDecorator` (Abstracto):** Implementa `IDocumentoPDF` y mantiene una referencia `envuelto : IDocumentoPDF` a la que delega.
+- **`MarcaAguaBorradorDecorator`:** Superpone en diagonal la marca de agua _"BORRADOR - VISTA PREVIA SIN VALIDEZ FISCAL"_ antes de la emisión definitiva (FR-053).
+- **`CabeceraAuditoriaDecorator`:** Añade a los informes exportados en PDF una cabecera con el usuario que los generó, la fecha y los filtros usados (`usuario : Usuario`, `filtros : String`; FR-100).
 
 ---
 
@@ -272,7 +326,7 @@ Representa a cualquier empleado interno de Turbine que opera en la aplicación. 
 - **Atributos principales:** `id : UUID`, `email : String`, `password : String`, `rol : String` (`OPERATIVO`, `ADMIN`, `SUPERADMIN`), `activo : Boolean`, `creadoEn : Timestamp`.
 - **Métodos:**
   - `+ autenticar(password : String) : Boolean`
-    - **Qué hace:** Verifica que el usuario esté activo (`activo == true`), que su correo pertenezca al dominio corporativo `@Turbine.com` y valida el hash de la contraseña proporcionada.
+    - **Qué hace:** Verifica que el usuario esté activo (`activo == true`), que su correo pertenezca al dominio corporativo configurado (FR-002, FR-103) y valida el hash de la contraseña proporcionada.
   - `+ tienePermiso(accion : String) : Boolean`
     - **Qué hace:** Evalúa si el `rol` del usuario le autoriza a ejecutar la `accion` solicitada, respetando la jerarquía de privilegios definida en los requisitos (`SUPERADMIN` hereda capacidades de `ADMIN`, y `ADMIN` hereda capacidades de `OPERATIVO`). Encapsula la matriz de permisos en un único punto, evitando condicionales dispersos en los servicios.
 
@@ -310,6 +364,20 @@ Representa la bitácora inmutable (_Append-Only_) de trazabilidad del sistema (`
   - `+ marcarLeida() : void`: Marca `leida = true` cuando el usuario abre el aviso.
   - `+ marcarResuelta() : void`: Marca `resuelta = true` cuando el usuario completa la tarea requerida (para notificaciones con `requiereAccion == true`).
 
+#### Clases de Eventos (`<<Observer>>`)
+
+- **`GestorEventosDominio` (`<<Subject>>`):** Mantiene la lista `observadores : List<IObservadorEvento>` y expone `suscribir`, `desuscribir` y `publicarEvento(tipo : String, payload : Map)`.
+- **`IObservadorEvento`:** Contrato `+ actualizar(tipo : String, payload : Map) : void`.
+- **`AuditoriaObserver`:** Inserta un registro inmutable en `AuditoriaLog` por cada evento sensible.
+- **`NotificacionObserver`:** Crea la `Notificacion` y un `RecibeNotificacion` por cada destinatario (responsable titular o suplente, administradores o usuarios mencionados).
+
+#### Clases de Soporte: `Incidencia`, `Comentario` y `Adjunto`
+
+- **`Incidencia`:** Incidencia de facturación asociada a un cliente y, opcionalmente, a una factura (`id`, `titulo`, `descripcion`, `estado`, `fechaCreacion`), creada por un `Usuario` (UC-20).
+  - `+ cerrar(resolucion : String) : void`: Cierra la incidencia registrando la resolución (FR-078).
+- **`Comentario`:** Nota interna sobre una factura o una incidencia (`id`, `texto`, `restringidoAdmin`, `fechaCreacion`) con menciones `@usuario` (UC-21, FR-127).
+- **`Adjunto`:** Metadatos de un fichero guardado en `StorageSeguro` (`id`, `nombreArchivo`, `rutaStorage`, `tipoMime`, `fechaSubida`), asociado a un cliente o a una factura (UC-21, FR-125, FR-126).
+
 ---
 
 ## 4. Colaboración en Tiempo de Ejecución (Flujos Clave)
@@ -319,16 +387,15 @@ Para ilustrar cómo interactúan las clases documentadas, se resumen dos flujos 
 1. **Emisión y Envío de una Factura (UC-12 / UC-13):**
    - El controlador invoca `FacturacionFacade.emitirYEnviarFactura(facturaId)`.
    - La fachada llama a `cliente.validarDatosFiscales()`. Si devuelve `false`, se lanza una excepción detallando los campos faltantes.
-   - Se asigna numeración correlativa y se llama a `exportarFacturaPDF(facturaId, false)` (usando `GeneradorPDFBase`).
-   - La fachada obtiene el texto renderizado desde `PlantillaComunicacion.renderizar(...)` e invoca `ICanalMensajeria.enviar(...)` sobre `EmailSimuladoAdapter`.
-   - Se publica `FacturaEmitida` en `GestorEventosDominio`, haciendo que `AuditoriaObserver` inserte una fila inmutable en `AuditoriaLog`.
+   - `factura.emitir()` delega en `EstadoBorrador`, que asigna el número mediante `SerieFacturacion.asignarSiguienteNumero()` y transiciona a `EstadoEmitida`; se llama a `exportarFacturaPDF(facturaId, false)` (usando `FacturaPDFBase`).
+   - La fachada obtiene el texto renderizado desde `PlantillaComunicacion.renderizar(...)` e invoca `ICanalMensajeria.enviar(...)` sobre `EmailSimuladoAdapter` para cada contacto de `cliente.contactosFacturacion()` hasta que uno entregue, registrando cada intento como `Envio`.
+   - Se publica `FACTURA_EMITIDA` en `GestorEventosDominio`, haciendo que `AuditoriaObserver` inserte una fila inmutable en `AuditoriaLog`.
 
 2. **Conciliación de un Cobro desde Stripe (UC-17):**
-   - El proceso invoca `FacturacionFacade.conciliarPagoExterno(referencia)`.
-   - La fachada consulta el estado mediante `IConsultarCobroExterno.consultarEstadoPago(referencia)` (`StripeSimuladoAdapter`).
-   - Si está confirmado, ejecuta `factura.registrarCobro(importe)`.
-   - `EstadoPendiente` valida que el trimestre no esté cerrado y transiciona la factura a `EstadoPagada`.
-   - Si el importe recibido es menor al total, se emite un evento que activa `NotificacionObserver`, creando una `Notificacion` con `requiereAccion = true` para el `Usuario` responsable principal del cliente.
+   - El proceso invoca `FacturacionFacade.conciliarCobrosConfirmados(desde)`, que obtiene los cobros mediante `IConsultarCobroExterno.obtenerCobrosConfirmados(desde)` (`StripeSimuladoAdapter`).
+   - Para cada cobro nuevo (no registrado con la misma `fuente` y `eventoExternoId`), se localiza la factura y se ejecuta `factura.registrarCobro(cobro)`.
+   - Si el cobro cubre el saldo pendiente, `factura.estadoCobro()` pasa a devolver `PAGADA`; el estado del documento sigue siendo `EstadoEmitida`.
+   - Si el importe difiere del saldo pendiente o no hay factura clara, el cobro queda con `estadoConciliacion = PENDIENTE` y se emite un evento que activa `NotificacionObserver`, creando una `Notificacion` con `requiereAccion = true` para el `Usuario` responsable principal del cliente.
 
 ---
 
@@ -336,11 +403,14 @@ Para ilustrar cómo interactúan las clases documentadas, se resumen dos flujos 
 
 | Requisito / Caso de Uso                                                      | Elemento del Diagrama de Clases                                         | Patrón / Mecanismo Aplicado         |
 | :--------------------------------------------------------------------------- | :---------------------------------------------------------------------- | :---------------------------------- |
-| **RB-02 / FR-040 a FR-043** (Prorrateos y excepciones)                       | `Suscripcion` + `IEstrategiaCalculoCuota`                               | Patrón **Strategy**                 |
-| **FR-066 / UC-14** (Ciclo de vida de cobro)                                  | `Factura` + `EstadoFactura` (`Pendiente`, `Pagada`, `Impagada`)         | Patrón **State**                    |
-| **FR-067 / UC-16 / UC-17** (Consulta Stripe simulada)                        | `IConsultarCobroExterno` + `StripeSimuladoAdapter`                      | Patrón **Adapter**                  |
-| **FR-061 / UC-13** (Envío Email y WhatsApp simulado)                         | `ICanalMensajeria` + `EmailSimuladoAdapter` / `WhatsAppSimuladoAdapter` | Patrón **Adapter**                  |
-| **FR-056 / UC-12** (Vista previa borrador y PDF oficial)                     | `IGeneradorPDF` + `GeneradorPDFBase` + `MarcaAguaBorradorDecorator`     | Patrón **Decorator**                |
-| **RB-06 / UC-11 / UC-12** (Facturas recurrentes, puntuales y rectificativas) | `CreadorDocumentoFacturacion` y fábricas concretas                      | Patrón **Factory Method**           |
+| **RB-02 / FR-040 a FR-043** (Prorrateos y excepciones)                       | `Suscripcion` + `IEstrategiaCalculoTarifa`                              | Patrón **Strategy**                 |
+| **FR-031 / Q-07 / UC-08 / UC-09** (Tramo de tarifa)                          | `Suscripcion` + `TarifaRango`                                           | Tabla versionada de tramos          |
+| **A-14 / UC-12 / UC-15** (Ciclo del documento)                               | `Factura` + `IEstadoFactura` (seis estados de documento)                | Patrón **State**                    |
+| **FR-066 / RB-10 / UC-17 / UC-19** (Estado de cobro)                         | `Factura.estadoCobro()`, `Factura.saldoPendiente()`, `Cobro`            | Estado derivado, no persistido      |
+| **FR-067 / UC-17** (Consulta Stripe simulada)                                | `IConsultarCobroExterno` + `StripeSimuladoAdapter`                      | Patrón **Adapter**                  |
+| **FR-061 a FR-065 / UC-13** (Envío Email y WhatsApp simulado, reintentos)    | `ICanalMensajeria` + adaptadores, `Envio`, `Cliente.contactosFacturacion()` | Patrón **Adapter**              |
+| **FR-113 a FR-117 / UC-10** (Baja sin bloqueo por deuda)                     | `Cliente.solicitarBaja()`, `Cliente.tieneDeudaPendiente()`              | Estado de cliente (`EstadoCliente`) |
+| **FR-056 / FR-053 / UC-12** (Vista previa borrador y PDF oficial)            | `IDocumentoPDF` + `FacturaPDFBase` + `MarcaAguaBorradorDecorator`       | Patrón **Decorator**                |
+| **RB-06 / UC-11 / UC-14 / UC-15** (Facturas recurrentes, puntuales y rectificativas) | `FacturaFactory` y fábricas concretas                           | Patrón **Factory Method**           |
 | **FR-109 / UC-22 / UC-28** (Auditoría inmutable y alertas)                   | `GestorEventosDominio` + `AuditoriaObserver` + `AuditoriaLog`           | Patrón **Observer** + _Append-Only_ |
 | **UC-01 a UC-04** (Control de acceso por rol)                                | `Usuario.tienePermiso(accion : String)`                                 | Encapsulamiento RBAC                |

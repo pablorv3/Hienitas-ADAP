@@ -1,10 +1,10 @@
-@startuml Diagrama_Clases_TurbineH
+@startuml Diagrama_Clases_Turbine
 skinparam classAttributeIconSize 0
 skinparam linetype ortho
 skinparam nodesep 60
 skinparam ranksep 60
 
-title Diagrama de Clases con Patrones de Diseño - TurbineH
+title Diagrama de Clases con Patrones de Diseño - Turbine
 
 ' ==========================================================
 ' PAQUETE 1: DOMINIO Y PERSISTENCIA (Alineado con Modelo ER)
@@ -29,20 +29,64 @@ package "dominio" {
     + actualizarValor(nuevoValor : String) : void
   }
 
+  class SerieFacturacion {
+    - codigo : String
+    - descripcion : String
+    - ultimoNumero : Integer
+    - activa : Boolean
+    + asignarSiguienteNumero() : String
+  }
+
+  class TarifaRango {
+    - id : UUID
+    - nombre : String
+    - facturacionDesde : Decimal
+    - facturacionHasta : Decimal
+    - precioMensual : Decimal
+    - vigenteDesde : Date
+    - vigenteHasta : Date
+    + aplicaA(facturacionAnual : Decimal, fecha : Date) : Boolean
+  }
+
+  enum EstadoCliente {
+    PENDIENTE_ACTIVACION
+    ACTIVO
+    PAUSADO
+    BAJA_SOLICITADA
+    INACTIVO
+  }
+
   class Cliente {
     - id : UUID
     - nif : String
     - nombreComercial : String
     - razonSocial : String
+    - domicilioFiscal : String
     - pais : String
     - moneda : String
     - impuestoRate : Decimal
+    - estado : EstadoCliente
+    - fechaBajaEfectiva : Date
+    + validarDatosFiscales() : Boolean
+    + contactosFacturacion() : List<Contacto>
+    + solicitarBaja(fechaEfectiva : Date) : void
+    + tieneDeudaPendiente() : Boolean
+    + reactivar() : void
+  }
+
+  class Contacto {
+    - id : UUID
+    - nombre : String
     - email : String
     - telefono : String
+    - idioma : String
+    - admiteWhatsApp : Boolean
     - activo : Boolean
-    + validarDatosFiscales() : Boolean
-    + puedeDarseDeBaja() : Boolean
-    + reactivar() : void
+  }
+
+  class ClienteContacto {
+    - rol : String
+    - prioridad : Integer
   }
 
   class Etiqueta {
@@ -52,7 +96,7 @@ package "dominio" {
 
   class Suscripcion {
     - id : UUID
-    - rangoCobro : String
+    - tarifaRango : TarifaRango
     - precioBase : Decimal
     - pausada : Boolean
     - motivoPausa : String
@@ -62,15 +106,23 @@ package "dominio" {
     + reanudar() : void
   }
 
+  enum EstadoCobro {
+    PENDIENTE
+    VENCIDA
+    PAGADA
+    INCOBRABLE
+  }
+
   class Factura {
     - id : UUID
     - numero : String
     - serie : String
     - tipo : String
-    - estadoCobro : String
-    - emitida : Boolean
-    - fechaEmision : Timestamp
-    - fechaVencimiento : Timestamp
+    - incobrable : Boolean
+    - periodoFacturacion : Date
+    - fechaEmision : Date
+    - fechaVencimiento : Date
+    - moneda : String
     - baseImponible : Decimal
     - impuestoTotal : Decimal
     - total : Decimal
@@ -79,6 +131,10 @@ package "dominio" {
     + recalcularTotales() : void
     + emitir() : void
     + registrarCobro(cobro : Cobro) : void
+    + estadoCobro() : EstadoCobro
+    + saldoPendiente() : Decimal
+    + esTrimestreCerrado() : Boolean
+    + cerrarTrimestre() : void
     + cancelarPorIncobrable(motivo : String) : void
   }
 
@@ -94,9 +150,25 @@ package "dominio" {
 
   class Cobro {
     - id : UUID
+    - fuente : String
+    - eventoExternoId : String
     - referenciaExterna : String
     - fechaPago : Timestamp
     - importe : Decimal
+    - moneda : String
+    - estadoConciliacion : String
+    - fechaConciliacion : Timestamp
+    + revertir(usuario : Usuario, motivo : String) : void
+  }
+
+  class Envio {
+    - id : UUID
+    - destinatario : String
+    - canal : String
+    - estado : String
+    - fecha : Timestamp
+    - detalleError : String
+    + esReintento() : Boolean
   }
 
   class SolicitudAprobacion {
@@ -178,15 +250,27 @@ package "dominio" {
   Usuario "1" --> "0..*" AuditoriaLog
   Usuario "1" --> "0..*" PlantillaComunicacion : ultimoAutor
 
+  Usuario "0..1" --> "0..*" Cobro : conciliadoPor
+  Usuario "1" --> "0..*" Incidencia : creadaPor
+
   Cliente "0..*" -- "0..*" Etiqueta
+  Cliente "0..*" -- "0..*" Contacto
+  (Cliente, Contacto) .. ClienteContacto
   Cliente "1" *-- "0..*" Suscripcion
+  TarifaRango "1" <-- "0..*" Suscripcion
   Cliente "1" --> "0..*" Factura
   Cliente "1" --> "0..*" Incidencia
   Cliente "0..1" o-- "0..*" Adjunto
 
+  Suscripcion "0..1" --> "0..*" Factura : origen
+  SerieFacturacion "0..1" --> "0..*" Factura : numera
   Factura "0..1" --> "0..*" Factura : rectifica
   Factura "1" *-- "1..*" LineaFactura
-  Factura "1" o-- "0..*" Cobro
+  Factura "0..1" o-- "0..*" Cobro
+  Factura "1" *-- "0..*" Envio
+  Envio "0..1" --> "0..*" Envio : envioOriginal
+  Contacto "0..1" --> "0..*" Envio
+  PlantillaComunicacion "1" --> "0..*" Envio
   Factura "0..1" --> "0..*" Incidencia
   Factura "0..1" *-- "0..*" Comentario
   Factura "0..1" o-- "0..*" Adjunto
@@ -207,22 +291,26 @@ package "negocio.reglas" {
   ' --- STATE (Ciclo de vida de Factura) ---
   interface IEstadoFactura <<State>> {
     + editarLineas(factura : Factura, linea : LineaFactura) : void
+    + solicitarAprobacion(factura : Factura, motivo : String) : void
+    + aprobar(factura : Factura, aprobador : Usuario) : void
     + emitir(factura : Factura) : void
-    + registrarCobro(factura : Factura, cobro : Cobro) : void
+    + anular(factura : Factura, motivo : String) : void
     + rectificar(factura : Factura) : Factura
   }
 
   class EstadoBorrador <<State>>
-  class EstadoPendiente <<State>>
-  class EstadoPagada <<State>>
-  class EstadoImpagada <<State>>
-  class EstadoIncobrable <<State>>
+  class EstadoPendienteAprobacion <<State>>
+  class EstadoListaEmitir <<State>>
+  class EstadoEmitida <<State>>
+  class EstadoAnulada <<State>>
+  class EstadoRectificada <<State>>
 
   EstadoBorrador ..|> IEstadoFactura
-  EstadoPendiente ..|> IEstadoFactura
-  EstadoPagada ..|> IEstadoFactura
-  EstadoImpagada ..|> IEstadoFactura
-  EstadoIncobrable ..|> IEstadoFactura
+  EstadoPendienteAprobacion ..|> IEstadoFactura
+  EstadoListaEmitir ..|> IEstadoFactura
+  EstadoEmitida ..|> IEstadoFactura
+  EstadoAnulada ..|> IEstadoFactura
+  EstadoRectificada ..|> IEstadoFactura
 
   Factura --> "1" IEstadoFactura : estadoActual
 
@@ -296,8 +384,12 @@ package "infraestructura" {
   class FacturacionFacade <<Facade>> {
     + generarFacturacionMensual(fecha : Date) : ResumenEjecucion
     + emitirYEnviarFactura(facturaId : UUID) : void
+    + conciliarCobrosConfirmados(desde : Timestamp) : ResumenEjecucion
     + conciliarPagoExterno(referencia : String) : void
     + exportarFacturaPDF(facturaId : UUID, esBorrador : Boolean) : byte[]
+    + consultarEstadoDeudaCliente(nif : String) : ResumenDeuda
+    + registrarSolicitudBajaExterna(nif : String, motivo : String) : SolicitudAprobacion
+    - registrarEnvio(factura : Factura, contacto : Contacto, estado : String) : Envio
   }
 
   ' --- ADAPTER (Integraciones simuladas/externas) ---
