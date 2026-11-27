@@ -27,7 +27,7 @@ La organización de los directorios sigue las especificaciones de la Guía Opera
 
 - `doc/`: Contiene los artefactos finales entregables en formato PDF (ej. documento de requisitos, especificaciones y diagramas de casos de uso exportados).
 - `doc/src/`: Contiene los archivos fuente editables de los artefactos. Incluye los documentos en formato Markdown (`.md`) y los diagramas en formato PlantUML (`.pu`).
-- `doc/src/img`: Contiene las imagenes usadas en los distintos documentos en formato Markdown (`.md`).
+- `doc/src/img`: Contiene las imagenes usadas en los distintos documentos en formato Markdown (`.md`), nombradas como `{file-name}-img{number}`.
 - `README.md`: Este documento de presentación.
 - `.gitignore`: Archivo de configuración para ignorar ficheros temporales y del sistema en el control de versiones.
 
