@@ -37,12 +37,10 @@ La organización sigue las plantillas de la Entrega 2:
 │   │   └── secuencias/           DS-01 a DS-08 (.puml)
 │   ├── documentacion/            Explicación de cada modelo (.md)
 │   ├── evidencias/               Capturas del tablero de la Entrega 2
-│   ├── README.md
 │   ├── informe.md                Portada e índice del informe
 │   ├── informe_scrum.md
 │   └── cambios_entrega1.md
 ├── informe-final/
-│   ├── README.md
 │   └── entrega2.pdf              Informe consolidado de la Entrega 2
 ├── .gitignore
 └── README.md
