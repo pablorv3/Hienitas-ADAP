@@ -149,9 +149,9 @@ Todas las reuniones fueron presenciales y participaron los seis miembros del equ
 - Repartir con tiempo el diagrama Entidad-Relación, el diagrama de clases, los diagramas de secuencia y el de arquitectura.
 - Mantener la trazabilidad entre requisitos, casos de uso y diseño.
 
-[image1]: ./img/informe-scrum-entrega1-img1.png
-[image2]: ./img/informe-scrum-entrega1-img2.png
-[image3]: ./img/informe-scrum-entrega1-img3.png
-[image4]: ./img/informe-scrum-entrega1-img4.png
-[image5]: ./img/informe-scrum-entrega1-img5.png
-[image6]: ./img/informe-scrum-entrega1-img6.png
+[image1]: ../evidencias/informe-scrum-entrega1-img1.png
+[image2]: ../evidencias/informe-scrum-entrega1-img2.png
+[image3]: ../evidencias/informe-scrum-entrega1-img3.png
+[image4]: ../evidencias/informe-scrum-entrega1-img4.png
+[image5]: ../evidencias/informe-scrum-entrega1-img5.png
+[image6]: ../evidencias/informe-scrum-entrega1-img6.png

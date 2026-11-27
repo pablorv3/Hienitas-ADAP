@@ -1,0 +1,18 @@
+@startuml uc-16
+left to right direction
+
+actor "Usuario operativo" as UO
+actor "Administrador" as Admin
+
+rectangle "uc-16: Gestionar Aprobación" {
+  usecase "Solicitar aprobación de\noperación sensible" as Solicitar
+  usecase "Aprobar / Rechazar solicitud" as Resolver
+  usecase "Añadir Comentario" as Comentario
+}
+
+UO -- Solicitar
+Admin -- Resolver
+
+Solicitar ..> Resolver : <<include>>
+Resolver <.. Comentario : <<extend>>
+@enduml

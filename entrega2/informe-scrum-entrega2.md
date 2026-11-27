@@ -144,9 +144,9 @@ Todas las reuniones fueron presenciales y contaron con la participación de los 
 - Tomar el diagrama físico E-R, el diagrama de clases y la arquitectura aprobados como base directa para la siguiente fase del proyecto, registrando cualquier cambio de diseño en el repositorio.
 - Incorporar _checklists_ de revisión en las tarjetas de Trello para validar trazabilidad y calidad antes de dar una tarea por terminada.
 
-[image1]: ./img/informe-scrum-entrega2-img1.png
-[image2]: ./img/informe-scrum-entrega2-img2.png
-[image3]: ./img/informe-scrum-entrega2-img3.png
-[image4]: ./img/informe-scrum-entrega2-img4.png
-[image5]: ./img/informe-scrum-entrega2-img5.png
-[image6]: ./img/informe-scrum-entrega2-img6.png
+[image1]: ./evidencias/informe-scrum-entrega2-img1.png
+[image2]: ./evidencias/informe-scrum-entrega2-img2.png
+[image3]: ./evidencias/informe-scrum-entrega2-img3.png
+[image4]: ./evidencias/informe-scrum-entrega2-img4.png
+[image5]: ./evidencias/informe-scrum-entrega2-img5.png
+[image6]: ./evidencias/informe-scrum-entrega2-img6.png

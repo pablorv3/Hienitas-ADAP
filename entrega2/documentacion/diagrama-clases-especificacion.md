@@ -400,16 +400,16 @@ Para ilustrar cómo interactúan las clases documentadas, se resumen dos flujos 
 
 ## 5. Matriz de Trazabilidad (Requisitos $\leftrightarrow$ Diseño)
 
-| Requisito / Caso de Uso                                                      | Elemento del Diagrama de Clases                                         | Patrón / Mecanismo Aplicado         |
-| :--------------------------------------------------------------------------- | :---------------------------------------------------------------------- | :---------------------------------- |
-| **RB-02 / FR-040 a FR-043** (Prorrateos y excepciones)                       | `Suscripcion` + `IEstrategiaCalculoTarifa`                              | Patrón **Strategy**                 |
-| **FR-031 / Q-07 / UC-08 / UC-09** (Tramo de tarifa)                          | `Suscripcion` + `TarifaRango`                                           | Tabla versionada de tramos          |
-| **A-14 / UC-12 / UC-15** (Ciclo del documento)                               | `Factura` + `IEstadoFactura` (seis estados de documento)                | Patrón **State**                    |
-| **FR-066 / RB-10 / UC-17 / UC-19** (Estado de cobro)                         | `Factura.estadoCobro()`, `Factura.saldoPendiente()`, `Cobro`            | Estado derivado, no persistido      |
-| **FR-067 / UC-17** (Consulta Stripe simulada)                                | `IConsultarCobroExterno` + `StripeSimuladoAdapter`                      | Patrón **Adapter**                  |
-| **FR-061 a FR-065 / UC-13** (Envío Email y WhatsApp simulado, reintentos)    | `ICanalMensajeria` + adaptadores, `Envio`, `Cliente.contactosFacturacion()` | Patrón **Adapter**              |
-| **FR-113 a FR-117 / UC-10** (Baja sin bloqueo por deuda)                     | `Cliente.solicitarBaja()`, `Cliente.tieneDeudaPendiente()`              | Estado de cliente (`EstadoCliente`) |
-| **FR-056 / FR-053 / UC-12** (Vista previa borrador y PDF oficial)            | `IDocumentoPDF` + `FacturaPDFBase` + `MarcaAguaBorradorDecorator`       | Patrón **Decorator**                |
-| **RB-06 / UC-11 / UC-14 / UC-15** (Facturas recurrentes, puntuales y rectificativas) | `FacturaFactory` y fábricas concretas                           | Patrón **Factory Method**           |
-| **FR-109 / UC-22 / UC-28** (Auditoría inmutable y alertas)                   | `GestorEventosDominio` + `AuditoriaObserver` + `AuditoriaLog`           | Patrón **Observer** + _Append-Only_ |
-| **UC-01 a UC-04** (Control de acceso por rol)                                | `Usuario.tienePermiso(accion : String)`                                 | Encapsulamiento RBAC                |
+| Requisito / Caso de Uso                                                              | Elemento del Diagrama de Clases                                             | Patrón / Mecanismo Aplicado         |
+| :----------------------------------------------------------------------------------- | :-------------------------------------------------------------------------- | :---------------------------------- |
+| **RB-02 / FR-040 a FR-043** (Prorrateos y excepciones)                               | `Suscripcion` + `IEstrategiaCalculoTarifa`                                  | Patrón **Strategy**                 |
+| **FR-031 / Q-07 / UC-08 / UC-09** (Tramo de tarifa)                                  | `Suscripcion` + `TarifaRango`                                               | Tabla versionada de tramos          |
+| **A-14 / UC-12 / UC-15** (Ciclo del documento)                                       | `Factura` + `IEstadoFactura` (seis estados de documento)                    | Patrón **State**                    |
+| **FR-066 / RB-10 / UC-17 / UC-19** (Estado de cobro)                                 | `Factura.estadoCobro()`, `Factura.saldoPendiente()`, `Cobro`                | Estado derivado, no persistido      |
+| **FR-067 / UC-17** (Consulta Stripe simulada)                                        | `IConsultarCobroExterno` + `StripeSimuladoAdapter`                          | Patrón **Adapter**                  |
+| **FR-061 a FR-065 / UC-13** (Envío Email y WhatsApp simulado, reintentos)            | `ICanalMensajeria` + adaptadores, `Envio`, `Cliente.contactosFacturacion()` | Patrón **Adapter**                  |
+| **FR-113 a FR-117 / UC-10** (Baja sin bloqueo por deuda)                             | `Cliente.solicitarBaja()`, `Cliente.tieneDeudaPendiente()`                  | Estado de cliente (`EstadoCliente`) |
+| **FR-056 / FR-053 / UC-12** (Vista previa borrador y PDF oficial)                    | `IDocumentoPDF` + `FacturaPDFBase` + `MarcaAguaBorradorDecorator`           | Patrón **Decorator**                |
+| **RB-06 / UC-11 / UC-14 / UC-15** (Facturas recurrentes, puntuales y rectificativas) | `FacturaFactory` y fábricas concretas                                       | Patrón **Factory Method**           |
+| **FR-109 / UC-22 / UC-28** (Auditoría inmutable y alertas)                           | `GestorEventosDominio` + `AuditoriaObserver` + `AuditoriaLog`               | Patrón **Observer** + _Append-Only_ |
+| **UC-01 a UC-04** (Control de acceso por rol)                                        | `Usuario.tienePermiso(accion : String)`                                     | Encapsulamiento RBAC                |
