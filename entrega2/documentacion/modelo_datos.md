@@ -3,7 +3,7 @@
 - **Proyecto:** Sistema Interno de Gestión de Facturación y Cobros (**Turbine**)
 - **Entrega:** Entrega 2 — Diseño del Sistema
 - **Artefacto:** Capa de Persistencia, Especificación del Modelo Físico Entidad-Relación (ERD) y Diccionario de Datos
-- **Diagrama Asociado:** `doc/src/base-datos-entidad-relacion-diagrama.pu` _(exportado a `doc/base-datos-entidad-relacion-diagrama.pdf`)_
+- **Diagrama Asociado:** `entrega2/diagramas/modelo_datos.puml` _(exportado a `informe-final/entrega2.pdf`)_
 - **Motor y ORM:** PostgreSQL / Prisma ORM
 - **Notación:** _Information Engineering_ (IE / _Crow's Foot_ — Oracle SQL Developer Data Modeler)
 
@@ -13,7 +13,7 @@
 
 ### 1.1. Propósito del Documento
 
-Este documento constituye la especificación técnica del **Modelo Físico de Base de Datos (ERD)** de **Turbine**, complementando la representación gráfica contenida en `doc/base-datos-entidad-relacion-diagrama.pdf`. En él se detallan las decisiones arquitectónicas de persistencia, la organización modular de las **23 tablas** del esquema, las reglas de integridad referencial, el diccionario de datos exhaustivo y la matriz de trazabilidad con los requisitos funcionales, no funcionales y diagramas dinámicos del sistema.
+Este documento constituye la especificación técnica del **Modelo Físico de Base de Datos (ERD)** de **Turbine**, complementando la representación gráfica contenida en `informe-final/entrega2.pdf`. En él se detallan las decisiones arquitectónicas de persistencia, la organización modular de las **23 tablas** del esquema, las reglas de integridad referencial, el diccionario de datos exhaustivo y la matriz de trazabilidad con los requisitos funcionales, no funcionales y diagramas dinámicos del sistema.
 
 ### 1.2. Alcance y Responsabilidades de la Capa de Datos
 
@@ -45,7 +45,7 @@ Cada decisión estructural del esquema físico responde a una regla de negocio o
 
 ## 3. Estructura Modular y Reglas de Integridad Referencial
 
-La representación gráfica completa del esquema físico se encuentra exportada en **`doc/base-datos-entidad-relacion-diagrama.pdf`** bajo la notación _Information Engineering_ (_Crow's Foot_ — Oracle SQL Developer Data Modeler). Estructuralmente, las **23 tablas** se organizan en cinco bloques funcionales:
+La representación gráfica completa del esquema físico se encuentra exportada en **`informe-final/entrega2.pdf`** bajo la notación _Information Engineering_ (_Crow's Foot_ — Oracle SQL Developer Data Modeler). Estructuralmente, las **23 tablas** se organizan en cinco bloques funcionales:
 
 | Módulo Funcional                           | Tablas Incluidas                                                                                                                              | Propósito Arquitectónico                                                                                                         |
 | :----------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------- |

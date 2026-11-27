@@ -23,13 +23,30 @@ El proyecto se divide en tres entregas iterativas, gestionadas mediante una adap
 
 ## 📂 Estructura del Repositorio
 
-La organización de los directorios sigue las especificaciones de la Guía Operativa (v1.0):
+La organización sigue las plantillas de la Entrega 2:
 
-- `doc/`: Contiene los artefactos finales entregables en formato PDF (ej. documento de requisitos, especificaciones y diagramas de casos de uso exportados).
-- `doc/src/`: Contiene los archivos fuente editables de los artefactos. Incluye los documentos en formato Markdown (`.md`) y los diagramas en formato PlantUML (`.pu`).
-- `doc/src/img`: Contiene las imagenes usadas en los distintos documentos en formato Markdown (`.md`), nombradas como `{file-name}-img{number}`.
-- `README.md`: Este documento de presentación.
-- `.gitignore`: Archivo de configuración para ignorar ficheros temporales y del sistema en el control de versiones.
+```
+├── entrega1-actualizada/
+│   ├── fuentes/                  Requisitos, especificación de casos de uso e informe Scrum (.md)
+│   │   ├── casos-uso/            Diagramas de casos de uso (PlantUML)
+│   │   └── evidencias/           Capturas del tablero de la Entrega 1
+│   └── informe/
+│       └── entrega1_actualizada.pdf
+├── entrega2/
+│   ├── diagramas/                modelo_datos, diagrama_clases y arquitectura (.puml)
+│   │   └── secuencias/           DS-01 a DS-08 (.puml)
+│   ├── documentacion/            Explicación de cada modelo (.md)
+│   ├── evidencias/               Capturas del tablero de la Entrega 2
+│   ├── README.md
+│   ├── informe.md                Portada e índice del informe
+│   ├── informe_scrum.md
+│   └── cambios_entrega1.md
+├── informe-final/
+│   ├── README.md
+│   └── entrega2.pdf              Informe consolidado de la Entrega 2
+├── .gitignore
+└── README.md
+```
 
 ---
 

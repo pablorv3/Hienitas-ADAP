@@ -3,7 +3,7 @@
 - **Proyecto:** Sistema interno de facturación y cobros de Turbine
 - **Asignatura:** Análisis y Diseño de Aplicaciones (curso 2026-27), Entrega 2
 - **Artefacto de la guía operativa:** apartado 7.6, «Diagrama de arquitectura o componentes».
-- **Diagrama fuente:** `doc/src/arquitectura-componentes.pu` (exportado a `doc/arquitectura-componentes-diagrama.pdf`).
+- **Diagrama fuente:** `entrega2/diagramas/arquitectura.puml` (exportado a `informe-final/entrega2.pdf`).
 - **Parte de:** `requisitos.md` (BR, FR, NFR, RB, A, Q) y `casos-uso-especificación.md` (UC-01 a UC-30).
 
 ## 1. Introducción
