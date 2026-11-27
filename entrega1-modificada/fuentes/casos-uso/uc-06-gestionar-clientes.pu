@@ -1,0 +1,26 @@
+@startuml uc-06
+    left to right direction
+    skinparam packageStyle rectangle
+
+    actor "Usuario Operativo" as UO
+    actor "Administrador" as Admin
+
+    ' El Administrador hereda todos los permisos del Usuario Operativo
+    Admin -|> UO
+
+    rectangle "UC-06: Gestionar clientes" {
+        usecase "Gestionar ficha de cliente\n(alta, consulta o edición)" as UC_Gestionar
+        usecase "Comprobar duplicados por NIF\ny validar datos fiscales" as UC_ValidarNIF
+        usecase "Consultar historial de eventos" as UC_Historial
+        usecase "Guardar ficha como borrador" as UC_Borrador
+        
+        ' Flujos alternativos y opcionales
+        UC_Gestionar <.. UC_Historial : <<extend>>
+        UC_Gestionar <.. UC_Borrador : <<extend>>
+         UC_Gestionar <.. UC_ValidarNIF : <<extend>>
+    }
+
+    ' Asociaciones simples
+    UO -- UC_Gestionar
+
+@enduml

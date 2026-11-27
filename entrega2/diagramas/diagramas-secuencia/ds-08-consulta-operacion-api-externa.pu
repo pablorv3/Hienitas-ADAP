@@ -1,0 +1,82 @@
+@startuml DS08_Consulta_Operacion_API_Externa
+    autonumber
+    skinparam sequenceMessageAlign center
+    skinparam responseMessageBelowArrow true
+
+    title DS-08: Consulta y Operación desde Sistema Externo vía API (UC-30)
+
+    actor "Sistema Externo (ej. Brain)" as Ext
+    participant "router : ApiExternaRouter" as Router
+    participant "auth : MiddlewareApiAuth" as Auth
+    participant "facade : FacturacionFacade" as Facade
+    participant "db : BaseDatosRelacional" as DB
+    participant "solicitud : SolicitudAprobacion" as Sol
+    participant "eventos : GestorEventosDominio" as Eventos
+    participant "auditoriaObs : AuditoriaObserver" as AudObs
+    participant "notifObs : NotificacionObserver" as NotifObs
+
+    Ext -> Router : Petición HTTPS (API-Key / Token)
+    activate Router
+
+    Router -> Auth : validarCredencialesYRateLimit(headers, origen)
+    activate Auth
+    Auth --> Router : resultado
+    deactivate Auth
+
+    alt Credenciales inválidas (E1) o límite de peticiones excedido (E2)
+        Router --> Ext : 401 Unauthorized / 429 Too Many Requests
+        deactivate Router
+    else Cliente API autorizado
+        alt Subflujo A: consulta de estado de deuda (GET - FR-114)
+            Router -> Facade : consultarEstadoDeudaCliente(nifCliente)
+            activate Facade
+            Facade -> DB : obtenerFacturasEmitidasConSaldoPendiente(nifCliente)
+            activate DB
+            DB --> Facade : facturas : List<Factura>
+            deactivate DB
+            note right of Facade: Incluye solo facturas emitidas, no incobrables,\ncon saldoPendiente() > 0 (estado de cobro derivado)
+
+            Facade -> Eventos : publicarEvento("CONSULTA_API_EXTERNA", payload)
+            activate Eventos
+            Eventos -> AudObs : actualizar("CONSULTA_API_EXTERNA", payload)
+            activate AudObs
+            AudObs --> Eventos : trazaAuditoriaRegistrada
+            deactivate AudObs
+            Eventos --> Facade : void
+            deactivate Eventos
+
+            Facade --> Router : resumen : ResumenDeuda
+            deactivate Facade
+            Router --> Ext : 200 OK (resumen mínimo en JSON)
+        else Subflujo B: notificación de solicitud de baja (POST - FR-113 / FR-114.1)
+            Router -> Facade : registrarSolicitudBajaExterna(nifCliente, motivo)
+            activate Facade
+            create Sol
+            Facade -> Sol : <<create>>(tipo = "BAJA_CLIENTE", estado = "PENDIENTE")
+            Facade -> DB : guardarSolicitud(solicitud)
+            activate DB
+            DB --> Facade : ok
+            deactivate DB
+
+            Facade -> Eventos : publicarEvento("SOLICITUD_BAJA_API_EXTERNA", payload)
+            activate Eventos
+            Eventos -> AudObs : actualizar("SOLICITUD_BAJA_API_EXTERNA", payload)
+            activate AudObs
+            AudObs --> Eventos : trazaAuditoriaRegistrada
+            deactivate AudObs
+            Eventos -> NotifObs : actualizar("SOLICITUD_BAJA_API_EXTERNA", payload)
+            activate NotifObs
+            NotifObs --> Eventos : alertaResponsableCreada
+            deactivate NotifObs
+            Eventos --> Facade : void
+            deactivate Eventos
+
+            ref over Facade, Sol, Eventos : DS-05: Aprobación de Excepciones y Rectificación Fiscal (UC-16 / UC-10)
+
+            Facade --> Router : solicitud.id
+            deactivate Facade
+            Router --> Ext : 202 Accepted (identificador de la solicitud)
+        end
+        deactivate Router
+    end
+@enduml

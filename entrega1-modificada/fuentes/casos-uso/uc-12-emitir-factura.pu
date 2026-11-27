@@ -1,0 +1,25 @@
+@startuml uc-12
+  left to right direction
+
+  actor "Usuario Operativo" as UO
+
+  rectangle "uc-12 Emitir factura" {
+      usecase "Emitir factura" as Emitir
+      usecase "Asignar serie y número" as AsignarNumero
+      usecase "Mostrar advertencia" as Bloqueo
+      usecase "Enviar factura" as UC13
+      usecase "Aprobar excepciones" as UC16
+
+  ' Relación del Actor
+  UO -- Emitir
+
+  ' Flujos Obligatorios (Includes)
+  Emitir ..> AsignarNumero : <<include>>
+  Emitir ..> UC13 : <<include>>
+
+  ' Flujos Alternativos y Excepciones (Extends)
+  UC16 .up.> Emitir : <<extend>>
+  Bloqueo <.. Emitir : <<include>>
+
+  }
+@enduml

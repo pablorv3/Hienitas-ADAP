@@ -1,0 +1,35 @@
+@startuml uc-11
+  left to right direction
+
+
+  actor "Usuario Operativo" as UO
+
+  rectangle "uc-11 Gestionar facturas puntuales y presupuestos" {
+      usecase "Crear factura puntual" as CrearFactura
+      usecase "Añadir líneas de concepto" as AnadirLineas
+      usecase "Calcular bases, impuestos y total" as Calcular
+      usecase "Guardar como borrador" as GuardarBorrador
+      
+      usecase "Crear presupuesto" as CrearPresupuesto
+      usecase "Convertir presupuesto en factura" as ConvertirPresupuesto
+      
+      usecase "Corregir / Eliminar borrador" as GestionarBorrador
+      
+      usecase "Modificar factura emitida" as UC15
+
+  ' Relaciones del Actor Principal
+  UO -- CrearFactura
+  UO -- CrearPresupuesto
+  UO -- GestionarBorrador
+
+  ' Flujo Principal (Includes)
+  CrearFactura ..> AnadirLineas : <<include>>
+  AnadirLineas ..> Calcular : <<include>>
+  CrearFactura ..> GuardarBorrador : <<include>>
+
+  ' Flujos Alternativos (Extends y Includes)
+  ConvertirPresupuesto .up.> CrearPresupuesto : <<extend>>
+
+  ' Excepciones (Extends)
+  UC15 .up.> CrearFactura : <<extend>>
+@enduml

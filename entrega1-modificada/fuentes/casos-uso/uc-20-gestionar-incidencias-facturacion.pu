@@ -1,0 +1,27 @@
+@startuml uc-20
+left to right direction
+
+actor "Usuario operativo" as UO
+actor "Sistema / Procesos automáticos" as Sys
+
+rectangle "uc-20 Incidencias de facturacion" {
+  usecase "Abrir incidencia manual" as AbrirM
+  usecase "Abrir incidencia automática" as AbrirA
+  usecase "Gestionar comentarios\ny adjuntos" as UC21
+  usecase "Cerrar incidencia" as Cerrar
+  usecase "Resolver incidencia" as Resolver
+  usecase "Pausar recordatorios\nde cobro" as Pausar
+  usecase "Consultar incidencias" as Consulta
+
+  UO -- Consulta
+  UO -- AbrirM
+  Sys -- AbrirA
+  UO -- UC21
+  UO -- Pausar
+
+  Consulta <.. Resolver : <<extend>>
+  AbrirM <.. Resolver : <<extend>>
+  Cerrar <.up. Resolver : <<include>> 
+
+}
+@enduml

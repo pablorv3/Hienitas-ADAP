@@ -1,0 +1,32 @@
+@startuml uc-13
+left to right direction
+
+actor "Usuario Operativo" as UO
+actor "Proveedor de Mensajería" as PM
+
+rectangle "uc-13: enviar factura y gentionar entrega"{
+    ' Casos de uso principales
+    usecase "Enviar factura (Correo)" as Enviar
+    usecase "Registrar estado del envío" as RegistrarEstado
+
+    ' Casos de uso alternativos y excepciones
+    usecase "Enviar por WhatsApp" as EnviarWA
+    usecase "Reintentar envío" as Reintentar
+    usecase "Notificar incidencia de entrega" as Incidencia
+
+    ' Relaciones de los Actores
+    UO -- Enviar
+    
+    PM -- RegistrarEstado
+
+    ' Flujos Obligatorios (Includes)
+    Enviar ..> RegistrarEstado : <<include>>
+
+    ' Flujos Alternativos y Excepciones (Extends)
+    EnviarWA ..> Enviar : <<extend>>
+    Reintentar ..> Enviar : <<extend>>
+    Incidencia ..> Enviar : <<extend>>
+
+}
+
+@enduml

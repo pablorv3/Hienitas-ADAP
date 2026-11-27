@@ -1,0 +1,48 @@
+@startuml arquitectura-componentes
+    skinparam componentStyle uml2
+    title Diagrama de Arquitectura y Componentes - Turbine
+
+    package "Capa Cliente (Navegador/Móvil)" {
+        [Frontend SPA (Interfaz Web)] as UI
+    }
+
+    package "Capa de Negocio (Backend)" {
+        [API REST (Controladores y Rutas)] as API
+        [Servicios de Negocio (Lógica)] as Logic
+        [Gestor de Eventos/Notificaciones] as NotifManager
+    }
+
+    package "Procesos en Segundo Plano" {
+        [Workers Asíncronos] as Workers
+        [Planificador (Cron/Scheduler)] as Cron
+    }
+
+    package "Capa de Datos e Infraestructura" {
+        [ORM / Pool de Conexiones] as ORM
+        database "Base de Datos Relacional" as DB
+        [Almacenamiento Ficheros Seguros (PDFs/Adjuntos)] as Storage
+    }
+
+    cloud "Servicios Externos (Encapsulados/Simulados)" {
+        [Adaptador Pagos (Stripe Simulado)] as StripeAdapter
+        [Adaptador Mensajería (Email/WA)] as MsgAdapter
+    }
+
+    ' Relaciones principales
+    UI .down.> API : Peticiones HTTP/REST (JSON)
+    API -down-> Logic
+    Logic -down-> ORM
+    ORM -down-> DB
+    Logic -right-> NotifManager
+
+    ' Relaciones del sistema en segundo plano
+    Cron -down-> Workers : "Dispara tareas (Día 1, Vencimientos)"
+    Workers -left-> Logic : "Ejecuta facturación/importación CSV"
+
+    ' Almacenamiento
+    Logic -down-> Storage : "Guarda/Lee documentos"
+
+    ' Integración externa simulada
+    NotifManager -up-> MsgAdapter : "Envía recordatorios (3, 5 días)"
+    Logic -up-> StripeAdapter : "Gestiona cobros (Simulado)"
+@enduml
